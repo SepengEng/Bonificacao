@@ -1,0 +1,73 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Obra {
+  id            String      @id @default(cuid())
+  nome          String
+  valorContrato Float
+  custosTotais  Float
+  prazoOpcao    String
+  custoOpcao    String
+  clienteMedia  Float
+  segurancaOk   Boolean
+  createdAt     DateTime    @default(now())
+  pessoas           Pessoa[]
+  avaliacoes        Avaliacao[]
+  avaliacoesCliente AvaliacaoCliente[]
+}
+
+model Pessoa {
+  id         String   @id @default(cuid())
+  nome       String
+  funcao     String?
+  setor      String
+  percentual Float?
+  tipo       String   @default("colaborador")
+  obraId     String
+  obra       Obra     @relation(fields: [obraId], references: [id], onDelete: Cascade)
+  avaliacoesComoAvaliador Avaliacao[] @relation("avaliador")
+  avaliacoesComoAvaliado  Avaliacao[] @relation("avaliado")
+}
+
+model Avaliacao {
+  id           String    @id @default(cuid())
+  token        String    @unique
+  obraId       String
+  obra         Obra      @relation(fields: [obraId], references: [id], onDelete: Cascade)
+  avaliadorId  String
+  avaliador    Pessoa    @relation("avaliador", fields: [avaliadorId], references: [id])
+  avaliadoId   String
+  avaliado     Pessoa    @relation("avaliado", fields: [avaliadoId], references: [id])
+  status       String    @default("pendente")
+  q1           Float?
+  q2           Float?
+  q3           Float?
+  q4           Float?
+  q5           Float?
+  q6           Float?
+  q7           Float?
+  respondidoEm DateTime?
+  createdAt    DateTime  @default(now())
+}
+
+model AvaliacaoCliente {
+  id           String    @id @default(cuid())
+  token        String    @unique
+  obraId       String
+  obra         Obra      @relation(fields: [obraId], references: [id], onDelete: Cascade)
+  label        String?
+  status       String    @default("pendente")
+  q1           Float?
+  q2           Float?
+  q3           Float?
+  q4           Float?
+  respondidoEm DateTime?
+  createdAt    DateTime  @default(now())
+}
