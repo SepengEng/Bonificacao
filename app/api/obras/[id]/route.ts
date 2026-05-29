@@ -18,6 +18,21 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   return NextResponse.json(obra)
 }
 
+export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  const body = await req.json()
+  const data: Record<string, unknown> = {}
+  if (body.nome          !== undefined) data.nome          = body.nome
+  if (body.valorContrato !== undefined) data.valorContrato = Number(body.valorContrato)
+  if (body.custosTotais  !== undefined) data.custosTotais  = Number(body.custosTotais)
+  if (body.prazoOpcao    !== undefined) data.prazoOpcao    = body.prazoOpcao
+  if (body.custoOpcao    !== undefined) data.custoOpcao    = body.custoOpcao
+  if (body.clienteMedia  !== undefined) data.clienteMedia  = Number(body.clienteMedia)
+  if (body.segurancaOk   !== undefined) data.segurancaOk   = Boolean(body.segurancaOk)
+  const obra = await prisma.obra.update({ where: { id }, data })
+  return NextResponse.json(obra)
+}
+
 export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   await prisma.obra.delete({ where: { id } })

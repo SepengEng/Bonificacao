@@ -46,9 +46,15 @@ export default function ObraPage() {
   const params  = useParams()
   const id      = params.id as string
   const router  = useRouter()
-  const [obra,    setObra]    = useState<Obra | null>(null)
-  const [tab,     setTab]     = useState<Tab>('pessoas')
-  const [loading, setLoading] = useState(true)
+  const [obra,      setObra]      = useState<Obra | null>(null)
+  const [tab,       setTab]       = useState<Tab>('pessoas')
+  const [loading,   setLoading]   = useState(true)
+  const [editando,  setEditando]  = useState(false)
+  const [salvando,  setSalvando]  = useState(false)
+  const [editForm,  setEditForm]  = useState({
+    nome: '', valorContrato: '', custosTotais: '',
+    prazoOpcao: '', custoOpcao: '', clienteMedia: '', segurancaOk: false,
+  })
 
   const reload = useCallback(async () => {
     const res = await fetch(`/api/obras/${id}`)
@@ -58,6 +64,40 @@ export default function ObraPage() {
   }, [id])
 
   useEffect(() => { reload() }, [reload])
+
+  function abrirEdicao() {
+    if (!obra) return
+    setEditForm({
+      nome:          obra.nome,
+      valorContrato: String(obra.valorContrato),
+      custosTotais:  String(obra.custosTotais),
+      prazoOpcao:    obra.prazoOpcao,
+      custoOpcao:    obra.custoOpcao,
+      clienteMedia:  String(obra.clienteMedia),
+      segurancaOk:   obra.segurancaOk,
+    })
+    setEditando(true)
+  }
+
+  async function salvarObra() {
+    setSalvando(true)
+    await fetch(`/api/obras/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        nome:          editForm.nome,
+        valorContrato: editForm.valorContrato,
+        custosTotais:  editForm.custosTotais,
+        prazoOpcao:    editForm.prazoOpcao,
+        custoOpcao:    editForm.custoOpcao,
+        clienteMedia:  editForm.clienteMedia,
+        segurancaOk:   editForm.segurancaOk,
+      }),
+    })
+    await reload()
+    setEditando(false)
+    setSalvando(false)
+  }
 
   if (loading) return <div className="text-center py-12 text-gray-400">Carregando...</div>
   if (!obra)   return <div className="text-center py-12 text-red-500">Obra não encontrada.</div>
@@ -76,13 +116,88 @@ export default function ObraPage() {
 
   return (
     <div className="max-w-5xl mx-auto px-4">
-      <div className="flex items-start gap-3 mb-5">
-        <button onClick={() => router.push('/')} className="mt-1 text-gray-400 hover:text-gray-600 text-xl leading-none">←</button>
-        <div>
-          <h1 className="text-xl font-bold text-gray-900">{obra.nome}</h1>
-          <p className="text-sm text-gray-500">{formatarMoeda(obra.valorContrato)}</p>
+      <div className="flex items-start justify-between gap-3 mb-5">
+        <div className="flex items-start gap-3">
+          <button onClick={() => router.push('/')} className="mt-1 text-gray-400 hover:text-gray-600 text-xl leading-none">←</button>
+          <div>
+            <h1 className="text-xl font-bold text-gray-900">{obra.nome}</h1>
+            <p className="text-sm text-gray-500">{formatarMoeda(obra.valorContrato)}</p>
+          </div>
         </div>
+        <button
+          onClick={abrirEdicao}
+          className="text-xs text-gray-400 hover:text-blue-600 border border-gray-200 hover:border-blue-300 rounded-lg px-3 py-1.5 transition-colors mt-1"
+        >
+          Editar dados
+        </button>
       </div>
+
+      {editando && (
+        <div className="mb-5 bg-white border border-blue-200 rounded-xl p-5 shadow-sm">
+          <h2 className="font-semibold text-gray-800 mb-4 text-sm">Editar dados da obra</h2>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="col-span-2">
+              <label className="text-xs text-gray-500 font-medium block mb-1">Nome da obra</label>
+              <input className={inp} value={editForm.nome}
+                onChange={e => setEditForm(f => ({ ...f, nome: e.target.value }))} />
+            </div>
+            <div>
+              <label className="text-xs text-gray-500 font-medium block mb-1">Valor do contrato (R$)</label>
+              <input className={inp} type="number" step="0.01" value={editForm.valorContrato}
+                onChange={e => setEditForm(f => ({ ...f, valorContrato: e.target.value }))} />
+            </div>
+            <div>
+              <label className="text-xs text-gray-500 font-medium block mb-1">Custos totais (R$)</label>
+              <input className={inp} type="number" step="0.01" value={editForm.custosTotais}
+                onChange={e => setEditForm(f => ({ ...f, custosTotais: e.target.value }))} />
+            </div>
+            <div>
+              <label className="text-xs text-gray-500 font-medium block mb-1">Prazo</label>
+              <select className={inp} value={editForm.prazoOpcao}
+                onChange={e => setEditForm(f => ({ ...f, prazoOpcao: e.target.value }))}>
+                {Object.entries(PRAZO_OPCOES).map(([k, v]) => (
+                  <option key={k} value={k}>{v.label} ({v.pontos} pts)</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="text-xs text-gray-500 font-medium block mb-1">Custo</label>
+              <select className={inp} value={editForm.custoOpcao}
+                onChange={e => setEditForm(f => ({ ...f, custoOpcao: e.target.value }))}>
+                {Object.entries(CUSTO_OPCOES).map(([k, v]) => (
+                  <option key={k} value={k}>{v.label} ({v.pontos} pts)</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="text-xs text-gray-500 font-medium block mb-1">NPS Cliente (média 0–5)</label>
+              <input className={inp} type="number" step="0.1" min="0" max="5" value={editForm.clienteMedia}
+                onChange={e => setEditForm(f => ({ ...f, clienteMedia: e.target.value }))} />
+            </div>
+            <div className="flex items-center gap-3 pt-5">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" className="w-4 h-4" checked={editForm.segurancaOk}
+                  onChange={e => setEditForm(f => ({ ...f, segurancaOk: e.target.checked }))} />
+                <span className="text-sm text-gray-700">Segurança OK (15 pts)</span>
+              </label>
+            </div>
+          </div>
+          <div className="flex gap-2 mt-4">
+            <button
+              onClick={salvarObra} disabled={salvando}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              {salvando ? 'Salvando...' : 'Salvar'}
+            </button>
+            <button
+              onClick={() => setEditando(false)}
+              className="px-4 py-2 border border-gray-300 text-gray-600 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className={`mb-5 p-4 rounded-xl border ${scoreBase.eliminatorio ? 'bg-red-50 border-red-200' : 'bg-blue-50 border-blue-200'}`}>
         {scoreBase.eliminatorio ? (
