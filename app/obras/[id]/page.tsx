@@ -312,9 +312,21 @@ function TabAvaliacoes({ obra, onReload }: { obra: Obra; onReload: () => void })
     onReload()
   }
 
-  async function remove(id: string) {
-    if (!confirm('Remover esta avaliação?')) return
+  async function remove(id: string, concluida = false) {
+    const msg = concluida
+      ? 'Esta avaliação já foi respondida. Remover mesmo assim?'
+      : 'Remover esta avaliação?'
+    if (!confirm(msg)) return
     await fetch(`/api/obras/${obra.id}/avaliacoes?avaliacaoId=${id}`, { method: 'DELETE' })
+    onReload()
+  }
+
+  async function removeGrupo(grupoToken: string, temConcluidas: boolean) {
+    const msg = temConcluidas
+      ? 'Este grupo tem avaliações já respondidas. Remover todas mesmo assim?'
+      : 'Remover todas as avaliações deste link compartilhado?'
+    if (!confirm(msg)) return
+    await fetch(`/api/obras/${obra.id}/avaliacoes?grupoToken=${grupoToken}`, { method: 'DELETE' })
     onReload()
   }
 
@@ -498,11 +510,18 @@ function TabAvaliacoes({ obra, onReload }: { obra: Obra; onReload: () => void })
                           <span className="text-xs font-semibold text-indigo-600">Link compartilhado</span>
                           <span className="text-xs text-indigo-400">{gConc}/{avs.length}</span>
                         </div>
-                        <button
-                          onClick={() => copy(grupoToken, 'avaliar/grupo')}
-                          className="text-indigo-600 hover:text-indigo-800 text-xs underline underline-offset-2">
-                          {copied === grupoToken ? '✓ Copiado!' : 'Copiar link'}
-                        </button>
+                        <div className="flex items-center gap-3">
+                          <button
+                            onClick={() => copy(grupoToken, 'avaliar/grupo')}
+                            className="text-indigo-600 hover:text-indigo-800 text-xs underline underline-offset-2">
+                            {copied === grupoToken ? '✓ Copiado!' : 'Copiar link'}
+                          </button>
+                          <button
+                            onClick={() => removeGrupo(grupoToken, gConc > 0)}
+                            className="text-red-400 hover:text-red-600 text-xs">
+                            remover grupo
+                          </button>
+                        </div>
                       </div>
                       <table className="w-full text-sm">
                         <tbody className="divide-y divide-gray-50">
@@ -520,9 +539,11 @@ function TabAvaliacoes({ obra, onReload }: { obra: Obra; onReload: () => void })
                                 </Badge>
                               </td>
                               <td className="px-4 py-2 text-right">
-                                {a.status === 'pendente' && (
-                                  <button onClick={() => remove(a.id)} className="text-red-400 hover:text-red-600 text-xs">remover</button>
-                                )}
+                                <button
+                                  onClick={() => remove(a.id, a.status === 'concluida')}
+                                  className="text-red-400 hover:text-red-600 text-xs">
+                                  remover
+                                </button>
                               </td>
                             </tr>
                           ))}
@@ -558,9 +579,11 @@ function TabAvaliacoes({ obra, onReload }: { obra: Obra; onReload: () => void })
                             )}
                           </td>
                           <td className="px-4 py-2.5 text-right">
-                            {a.status === 'pendente' && (
-                              <button onClick={() => remove(a.id)} className="text-red-400 hover:text-red-600 text-xs">remover</button>
-                            )}
+                            <button
+                              onClick={() => remove(a.id, a.status === 'concluida')}
+                              className="text-red-400 hover:text-red-600 text-xs">
+                              remover
+                            </button>
                           </td>
                         </tr>
                       ))}

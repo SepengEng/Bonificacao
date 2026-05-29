@@ -22,10 +22,18 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 }
 
 export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  await params
+  const { id } = await params
   const { searchParams } = new URL(req.url)
   const avaliacaoId = searchParams.get('avaliacaoId')
-  if (!avaliacaoId) return NextResponse.json({ error: 'Missing id' }, { status: 400 })
-  await prisma.avaliacao.delete({ where: { id: avaliacaoId } })
-  return NextResponse.json({ ok: true })
+  const grupoToken  = searchParams.get('grupoToken')
+
+  if (grupoToken) {
+    await prisma.avaliacao.deleteMany({ where: { obraId: id, grupoToken } })
+    return NextResponse.json({ ok: true })
+  }
+  if (avaliacaoId) {
+    await prisma.avaliacao.delete({ where: { id: avaliacaoId } })
+    return NextResponse.json({ ok: true })
+  }
+  return NextResponse.json({ error: 'Missing avaliacaoId or grupoToken' }, { status: 400 })
 }
