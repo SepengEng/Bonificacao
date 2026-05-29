@@ -126,7 +126,7 @@ export default function ObraPage() {
   ]
 
   return (
-    <div>
+    <div className="animate-fade-in">
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 20 }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
@@ -146,7 +146,7 @@ export default function ObraPage() {
 
       {/* Edit panel */}
       {editando && (
-        <div className="card" style={{ marginBottom: 20, padding: 20, borderColor: 'rgba(42,185,176,0.3)' }}>
+        <div className="card animate-slide-down" style={{ marginBottom: 20, padding: 20, borderColor: 'rgba(42,185,176,0.3)' }}>
           <h2 style={{ fontWeight: 600, color: 'var(--fg)', marginBottom: 16, fontSize: 14 }}>Editar dados da obra</h2>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
             <div style={{ gridColumn: '1 / -1' }}>
@@ -216,7 +216,7 @@ export default function ObraPage() {
         {scoreBase.eliminatorio ? (
           <p style={{ color: '#DC2626', fontWeight: 600, fontSize: 14 }}>⚠️ Bonificação ELIMINADA — desvio de custo superior a 5%</p>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8 }}>
+          <div className="stagger" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8 }}>
             <ScoreCard label="Prazo"      pts={prazoPts}         max={35} />
             <ScoreCard label="Custo"      pts={custoPts}         max={35} />
             <ScoreCard label="Cliente"    pts={clientePts}       max={15} />
@@ -243,9 +243,11 @@ export default function ObraPage() {
         ))}
       </div>
 
-      {tab === 'pessoas'    && <TabPessoas obra={obra} onReload={reload} />}
-      {tab === 'avaliacoes' && <TabAvaliacoes obra={obra} onReload={reload} />}
-      {tab === 'resultados' && <TabResultados obraId={id} />}
+      <div key={tab} className="animate-fade-in-up">
+        {tab === 'pessoas'    && <TabPessoas obra={obra} onReload={reload} />}
+        {tab === 'avaliacoes' && <TabAvaliacoes obra={obra} onReload={reload} />}
+        {tab === 'resultados' && <TabResultados obraId={id} />}
+      </div>
     </div>
   )
 }

@@ -20,7 +20,7 @@ export default function Dashboard() {
   }, [])
 
   return (
-    <div>
+    <div className="animate-fade-in">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 style={{ fontSize: 20, fontWeight: 700, color: 'var(--fg)' }}>Obras</h1>
@@ -55,24 +55,13 @@ export default function Dashboard() {
           <p style={{ fontSize: 13, color: 'var(--muted)' }}>Comece criando a primeira obra.</p>
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div className="stagger" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {obras.map(obra => (
             <Link key={obra.id} href={`/obras/${obra.id}`} style={{ textDecoration: 'none' }}>
-              <div className="card" style={{
+              <div className="card card-interactive" style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: '14px 18px', cursor: 'pointer', transition: 'border-color 0.15s, box-shadow 0.15s',
-              }}
-                onMouseEnter={e => {
-                  const el = e.currentTarget as HTMLDivElement
-                  el.style.borderColor = 'var(--teal)'
-                  el.style.boxShadow = '0 2px 12px rgba(42,185,176,0.12)'
-                }}
-                onMouseLeave={e => {
-                  const el = e.currentTarget as HTMLDivElement
-                  el.style.borderColor = 'var(--border)'
-                  el.style.boxShadow = 'none'
-                }}
-              >
+                padding: '14px 18px',
+              }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                   <div style={{
                     width: 40, height: 40, borderRadius: 10, flexShrink: 0,

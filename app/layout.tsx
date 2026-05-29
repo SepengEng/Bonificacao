@@ -1,6 +1,14 @@
 import type { Metadata } from 'next'
 import Image from 'next/image'
+import { Plus_Jakarta_Sans } from 'next/font/google'
 import './globals.css'
+
+const font = Plus_Jakarta_Sans({
+  subsets: ['latin'],
+  variable: '--font-sans',
+  display: 'swap',
+  weight: ['400', '500', '600', '700'],
+})
 
 export const metadata: Metadata = {
   title: 'SEPENG · Bonificação',
@@ -9,7 +17,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="pt-BR">
+    <html lang="pt-BR" className={font.variable}>
       <body className="min-h-screen" style={{ background: 'var(--bg)' }}>
         <header style={{ background: 'var(--navy)', borderBottom: '1px solid var(--navy-light)' }}>
           <div className="max-w-5xl mx-auto px-6 py-0 flex items-center justify-between" style={{ height: 56 }}>
