@@ -13,7 +13,7 @@ interface Pessoa {
   setor: string; percentual: number | null; tipo: string
 }
 interface Avaliacao {
-  id: string; token: string; status: string
+  id: string; token: string; status: string; grupoToken: string | null
   avaliador: Pessoa; avaliado: Pessoa
 }
 interface AvaliacaoCliente {
@@ -271,27 +271,44 @@ function TabPessoas({ obra, onReload }: { obra: Obra; onReload: () => void }) {
 
 // ─── TAB AVALIAÇÕES ───────────────────────────────────────────────────────────
 function TabAvaliacoes({ obra, onReload }: { obra: Obra; onReload: () => void }) {
-  const [avaliadorId, setAvaliadorId] = useState('')
-  const [avaliadoId,  setAvaliadoId]  = useState('')
-  const [saving,      setSaving]      = useState(false)
-  const [copied,      setCopied]      = useState<string | null>(null)
-  const [error,       setError]       = useState('')
-  const [clienteLabel, setClienteLabel] = useState('')
+  const [copied,        setCopied]        = useState<string | null>(null)
+  // grupo link state
+  const [grupoAvaliado, setGrupoAvaliado] = useState('')
+  const [grupoSelecionados, setGrupoSelecionados] = useState<string[]>([])
+  const [savingGrupo,   setSavingGrupo]   = useState(false)
+  const [erroGrupo,     setErroGrupo]     = useState('')
+  // cliente state
+  const [clienteLabel,  setClienteLabel]  = useState('')
   const [savingCliente, setSavingCliente] = useState(false)
 
-  async function add(e: React.FormEvent) {
+  function copy(token: string, path = 'avaliar') {
+    navigator.clipboard.writeText(`${window.location.origin}/${path}/${token}`)
+    setCopied(token)
+    setTimeout(() => setCopied(null), 2000)
+  }
+
+  function toggleAvaliador(id: string) {
+    setGrupoSelecionados(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    )
+  }
+
+  async function criarGrupo(e: React.FormEvent) {
     e.preventDefault()
-    if (avaliadorId === avaliadoId) { setError('Avaliador e avaliado não podem ser a mesma pessoa.'); return }
-    setError('')
-    setSaving(true)
-    const res = await fetch(`/api/obras/${obra.id}/avaliacoes`, {
+    setErroGrupo('')
+    const avaliadores = grupoSelecionados.filter(id => id !== grupoAvaliado)
+    if (!grupoAvaliado) { setErroGrupo('Selecione quem será avaliado.'); return }
+    if (avaliadores.length < 1) { setErroGrupo('Selecione pelo menos 1 avaliador (diferente do avaliado).'); return }
+    setSavingGrupo(true)
+    const res = await fetch(`/api/obras/${obra.id}/avaliacoes/grupo`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ avaliadorId, avaliadoId }),
+      body: JSON.stringify({ avaliadoId: grupoAvaliado, avaliadorIds: avaliadores }),
     })
-    if (!res.ok) { const d = await res.json(); setError(d.error ?? 'Erro.') }
-    else { setAvaliadorId(''); setAvaliadoId('') }
-    setSaving(false)
+    const d = await res.json()
+    if (!res.ok) { setErroGrupo(d.error ?? 'Erro.') }
+    else { setGrupoAvaliado(''); setGrupoSelecionados([]) }
+    setSavingGrupo(false)
     onReload()
   }
 
@@ -299,12 +316,6 @@ function TabAvaliacoes({ obra, onReload }: { obra: Obra; onReload: () => void })
     if (!confirm('Remover esta avaliação?')) return
     await fetch(`/api/obras/${obra.id}/avaliacoes?avaliacaoId=${id}`, { method: 'DELETE' })
     onReload()
-  }
-
-  function copy(token: string, path = 'avaliar') {
-    navigator.clipboard.writeText(`${window.location.origin}/${path}/${token}`)
-    setCopied(token)
-    setTimeout(() => setCopied(null), 2000)
   }
 
   async function addCliente(e: React.FormEvent) {
@@ -326,61 +337,119 @@ function TabAvaliacoes({ obra, onReload }: { obra: Obra; onReload: () => void })
     onReload()
   }
 
-  function pessoaLabel(p: Pessoa) {
-    const tipo = p.tipo === 'diretor' ? ' (Diretor)' : ` · ${SETOR_LABELS[p.setor] ?? p.setor}`
-    return `${p.nome}${tipo}`
-  }
+  // Build display: group by avaliado, then by grupoToken within
+  const avaliadosMap = new Map<string, {
+    avaliado: Pessoa
+    grupos: Map<string, Avaliacao[]>   // grupoToken → avaliacoes
+    individuais: Avaliacao[]
+  }>()
 
-  // Group avaliacoes by avaliado for display
-  const avaliadosComAvaliacoes = Array.from(
-    new Set(obra.avaliacoes.map(a => a.avaliado.id))
-  ).map(avaliadoId => {
-    const avaliado   = obra.pessoas.find(p => p.id === avaliadoId)!
-    const avaliacoes = obra.avaliacoes.filter(a => a.avaliado.id === avaliadoId)
-    return { avaliado, avaliacoes }
-  })
+  for (const a of obra.avaliacoes) {
+    const aid = a.avaliado.id
+    if (!avaliadosMap.has(aid)) {
+      avaliadosMap.set(aid, { avaliado: a.avaliado, grupos: new Map(), individuais: [] })
+    }
+    const entry = avaliadosMap.get(aid)!
+    if (a.grupoToken) {
+      const grupo = entry.grupos.get(a.grupoToken) ?? []
+      grupo.push(a)
+      entry.grupos.set(a.grupoToken, grupo)
+    } else {
+      entry.individuais.push(a)
+    }
+  }
 
   const concluidas = obra.avaliacoes.filter(a => a.status === 'concluida').length
   const total      = obra.avaliacoes.length
 
+  // Diretores first, then collaborators, for the evaluator checklist
+  const diretores     = obra.pessoas.filter(p => p.tipo === 'diretor')
+  const colaboradores = obra.pessoas.filter(p => p.tipo !== 'diretor')
+
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       {obra.pessoas.length < 2 && (
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-700">
           Adicione pelo menos 2 pessoas na aba <strong>Pessoas</strong> para gerar avaliações.
         </div>
       )}
 
-      {/* Add pair form */}
-      <form onSubmit={add} className="bg-white border border-gray-200 rounded-xl p-4">
-        <h3 className="font-medium text-gray-700 mb-3 text-sm">Gerar link de avaliação</h3>
-        <p className="text-xs text-gray-400 mb-3">
-          Você pode gerar múltiplos links para o mesmo avaliado — cada avaliador recebe seu próprio link. A média de todos é usada no cálculo.
+      {/* ── Link Compartilhado ── */}
+      <form onSubmit={criarGrupo} className="bg-white border border-gray-200 rounded-xl p-4">
+        <h3 className="font-semibold text-gray-700 mb-1 text-sm">Link Compartilhado 360°</h3>
+        <p className="text-xs text-gray-400 mb-4">
+          Um único link para 2–5 avaliadores. Cada um se identifica ao clicar e preenche sua própria avaliação.
         </p>
-        <div className="grid grid-cols-2 gap-3 mb-3">
-          <div>
-            <label className="text-xs text-gray-500 mb-1 block">Avaliador (quem preenche)</label>
-            <select className={inp} value={avaliadorId} onChange={e => setAvaliadorId(e.target.value)} required>
-              <option value="">Selecione...</option>
-              {obra.pessoas.map(p => (
-                <option key={p.id} value={p.id}>{pessoaLabel(p)}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="text-xs text-gray-500 mb-1 block">Avaliado (quem está sendo avaliado)</label>
-            <select className={inp} value={avaliadoId} onChange={e => setAvaliadoId(e.target.value)} required>
-              <option value="">Selecione...</option>
-              {obra.pessoas.map(p => (
-                <option key={p.id} value={p.id}>{pessoaLabel(p)}</option>
-              ))}
-            </select>
+
+        <div className="mb-4">
+          <label className="text-xs text-gray-500 mb-1 block font-medium">Quem será avaliado?</label>
+          <select className={inp} value={grupoAvaliado}
+            onChange={e => { setGrupoAvaliado(e.target.value); setGrupoSelecionados(prev => prev.filter(id => id !== e.target.value)) }}
+            required>
+            <option value="">Selecione o avaliado...</option>
+            {colaboradores.map(p => (
+              <option key={p.id} value={p.id}>{p.nome} · {SETOR_LABELS[p.setor] ?? p.setor}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="mb-4">
+          <label className="text-xs text-gray-500 mb-2 block font-medium">Quem vai avaliar? (marque 1 a 5)</label>
+
+          {diretores.length > 0 && (
+            <div className="mb-2">
+              <p className="text-xs text-purple-600 font-medium mb-1 uppercase tracking-wide">Diretores</p>
+              <div className="space-y-1">
+                {diretores.map(p => {
+                  const disabled = p.id === grupoAvaliado
+                  return (
+                    <label key={p.id}
+                      className={`flex items-center gap-3 px-3 py-2 rounded-lg border cursor-pointer transition-colors ${
+                        disabled ? 'opacity-40 cursor-not-allowed bg-gray-50 border-gray-100' :
+                        grupoSelecionados.includes(p.id)
+                          ? 'bg-purple-50 border-purple-300'
+                          : 'bg-white border-gray-200 hover:border-purple-200'
+                      }`}>
+                      <input type="checkbox" checked={grupoSelecionados.includes(p.id)}
+                        disabled={disabled}
+                        onChange={() => !disabled && toggleAvaliador(p.id)}
+                        className="accent-purple-600" />
+                      <span className="text-sm font-medium text-gray-800">{p.nome}</span>
+                      <span className="text-xs text-purple-500 ml-auto">Diretor</span>
+                    </label>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
+          <div className="space-y-1">
+            {colaboradores.map(p => {
+              const disabled = p.id === grupoAvaliado
+              return (
+                <label key={p.id}
+                  className={`flex items-center gap-3 px-3 py-2 rounded-lg border cursor-pointer transition-colors ${
+                    disabled ? 'opacity-40 cursor-not-allowed bg-gray-50 border-gray-100' :
+                    grupoSelecionados.includes(p.id)
+                      ? 'bg-blue-50 border-blue-300'
+                      : 'bg-white border-gray-200 hover:border-blue-200'
+                  }`}>
+                  <input type="checkbox" checked={grupoSelecionados.includes(p.id)}
+                    disabled={disabled}
+                    onChange={() => !disabled && toggleAvaliador(p.id)}
+                    className="accent-blue-600" />
+                  <span className="text-sm font-medium text-gray-800">{p.nome}</span>
+                  <span className="text-xs text-gray-400 ml-auto">{SETOR_LABELS[p.setor] ?? p.setor}</span>
+                </label>
+              )
+            })}
           </div>
         </div>
-        {error && <p className="text-xs text-red-600 mb-2">{error}</p>}
-        <button type="submit" disabled={saving}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors">
-          {saving ? 'Gerando...' : 'Gerar Link'}
+
+        {erroGrupo && <p className="text-xs text-red-600 mb-2">{erroGrupo}</p>}
+        <button type="submit" disabled={savingGrupo || grupoSelecionados.filter(id => id !== grupoAvaliado).length === 0}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-40 transition-colors">
+          {savingGrupo ? 'Gerando...' : `Gerar Link Compartilhado (${grupoSelecionados.filter(id => id !== grupoAvaliado).length} avaliadores)`}
         </button>
       </form>
 
@@ -390,65 +459,22 @@ function TabAvaliacoes({ obra, onReload }: { obra: Obra; onReload: () => void })
           <span className="text-gray-600 whitespace-nowrap">{concluidas}/{total} concluídas</span>
           <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
             <div className="h-full bg-blue-500 rounded-full transition-all"
-              style={{ width: `${total > 0 ? (concluidas / total) * 100 : 0}%` }} />
+              style={{ width: `${(concluidas / total) * 100}%` }} />
           </div>
         </div>
       )}
 
-      {/* ── NPS Cliente ── */}
-      <div className="border-t border-gray-100 pt-5">
-        <h3 className="font-semibold text-gray-700 mb-1 text-sm">NPS Cliente</h3>
-        <p className="text-xs text-gray-400 mb-3">
-          Gere links para clientes avaliarem a obra (4 perguntas). A média substituirá o valor manual de NPS Cliente.
-        </p>
-
-        <form onSubmit={addCliente} className="flex gap-2 mb-4">
-          <input
-            className={`${inp} flex-1`}
-            value={clienteLabel}
-            onChange={e => setClienteLabel(e.target.value)}
-            placeholder="Identificação do cliente (opcional)"
-          />
-          <button type="submit" disabled={savingCliente}
-            className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 disabled:opacity-50 whitespace-nowrap">
-            {savingCliente ? 'Gerando...' : '+ Link Cliente'}
-          </button>
-        </form>
-
-        {obra.avaliacoesCliente.length > 0 && (
-          <div className="space-y-2">
-            {obra.avaliacoesCliente.map(ac => (
-              <div key={ac.id} className="flex items-center justify-between bg-white border border-gray-200 rounded-lg px-4 py-2.5">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-700">{ac.label ?? 'Cliente sem nome'}</span>
-                  <Badge color={ac.status === 'concluida' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}>
-                    {ac.status === 'concluida' ? '✓ Respondida' : 'Aguardando'}
-                  </Badge>
-                </div>
-                <div className="flex items-center gap-3">
-                  {ac.status === 'pendente' && (
-                    <button onClick={() => copy(ac.token, 'cliente')}
-                      className="text-green-600 hover:text-green-800 text-xs underline underline-offset-2">
-                      {copied === ac.token ? '✓ Copiado!' : 'Copiar link'}
-                    </button>
-                  )}
-                  {ac.status === 'pendente' && (
-                    <button onClick={() => removeCliente(ac.id)} className="text-red-400 hover:text-red-600 text-xs">remover</button>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
       {/* Grouped by avaliado */}
-      {avaliadosComAvaliacoes.length === 0 ? (
-        <p className="text-center text-sm text-gray-400 py-8 italic">Nenhuma avaliação 360° gerada ainda.</p>
+      {avaliadosMap.size === 0 ? (
+        <p className="text-center text-sm text-gray-400 py-4 italic">Nenhuma avaliação 360° gerada ainda.</p>
       ) : (
         <div className="space-y-4">
-          {avaliadosComAvaliacoes.map(({ avaliado, avaliacoes }) => {
-            const conc = avaliacoes.filter(a => a.status === 'concluida').length
+          {Array.from(avaliadosMap.values()).map(({ avaliado, grupos, individuais }) => {
+            const todasAv = [
+              ...Array.from(grupos.values()).flat(),
+              ...individuais,
+            ]
+            const conc = todasAv.filter(a => a.status === 'concluida').length
             return (
               <div key={avaliado.id} className="bg-white border border-gray-200 rounded-xl overflow-hidden">
                 <div className="flex items-center justify-between px-4 py-2.5 bg-gray-50 border-b border-gray-100">
@@ -459,45 +485,131 @@ function TabAvaliacoes({ obra, onReload }: { obra: Obra; onReload: () => void })
                       : <Badge color="bg-blue-50 text-blue-600">{SETOR_LABELS[avaliado.setor] ?? avaliado.setor}</Badge>
                     }
                   </div>
-                  <span className="text-xs text-gray-500">{conc}/{avaliacoes.length} concluídas</span>
+                  <span className="text-xs text-gray-500">{conc}/{todasAv.length} concluídas</span>
                 </div>
-                <table className="w-full text-sm">
-                  <tbody className="divide-y divide-gray-50">
-                    {avaliacoes.map(a => (
-                      <tr key={a.id} className="hover:bg-gray-50">
-                        <td className="px-4 py-2.5 text-gray-700">
-                          <span className="font-medium">{a.avaliador.nome}</span>
-                          {a.avaliador.tipo === 'diretor' && (
-                            <span className="text-purple-500 text-xs ml-1">(Diretor)</span>
-                          )}
-                        </td>
-                        <td className="px-4 py-2.5">
-                          <Badge color={a.status === 'concluida' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}>
-                            {a.status === 'concluida' ? '✓ Concluída' : 'Pendente'}
-                          </Badge>
-                        </td>
-                        <td className="px-4 py-2.5">
-                          {a.status === 'pendente' && (
-                            <button onClick={() => copy(a.token)}
-                              className="text-blue-600 hover:text-blue-800 text-xs underline underline-offset-2">
-                              {copied === a.token ? '✓ Copiado!' : 'Copiar link'}
-                            </button>
-                          )}
-                        </td>
-                        <td className="px-4 py-2.5 text-right">
-                          {a.status === 'pendente' && (
-                            <button onClick={() => remove(a.id)} className="text-red-400 hover:text-red-600 text-xs">remover</button>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+
+                {/* Group links */}
+                {Array.from(grupos.entries()).map(([grupoToken, avs]) => {
+                  const gConc = avs.filter(a => a.status === 'concluida').length
+                  return (
+                    <div key={grupoToken} className="border-b border-gray-50">
+                      <div className="flex items-center justify-between px-4 py-2 bg-indigo-50">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-semibold text-indigo-600">Link compartilhado</span>
+                          <span className="text-xs text-indigo-400">{gConc}/{avs.length}</span>
+                        </div>
+                        <button
+                          onClick={() => copy(grupoToken, 'avaliar/grupo')}
+                          className="text-indigo-600 hover:text-indigo-800 text-xs underline underline-offset-2">
+                          {copied === grupoToken ? '✓ Copiado!' : 'Copiar link'}
+                        </button>
+                      </div>
+                      <table className="w-full text-sm">
+                        <tbody className="divide-y divide-gray-50">
+                          {avs.map(a => (
+                            <tr key={a.id} className="hover:bg-gray-50">
+                              <td className="px-6 py-2 text-gray-600">
+                                <span>{a.avaliador.nome}</span>
+                                {a.avaliador.tipo === 'diretor' && (
+                                  <span className="text-purple-500 text-xs ml-1.5">(Diretor)</span>
+                                )}
+                              </td>
+                              <td className="px-4 py-2">
+                                <Badge color={a.status === 'concluida' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}>
+                                  {a.status === 'concluida' ? '✓ Concluída' : 'Pendente'}
+                                </Badge>
+                              </td>
+                              <td className="px-4 py-2 text-right">
+                                {a.status === 'pendente' && (
+                                  <button onClick={() => remove(a.id)} className="text-red-400 hover:text-red-600 text-xs">remover</button>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )
+                })}
+
+                {/* Individual links */}
+                {individuais.length > 0 && (
+                  <table className="w-full text-sm">
+                    <tbody className="divide-y divide-gray-50">
+                      {individuais.map(a => (
+                        <tr key={a.id} className="hover:bg-gray-50">
+                          <td className="px-4 py-2.5 text-gray-700">
+                            <span className="font-medium">{a.avaliador.nome}</span>
+                            {a.avaliador.tipo === 'diretor' && (
+                              <span className="text-purple-500 text-xs ml-1.5">(Diretor)</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-2.5">
+                            <Badge color={a.status === 'concluida' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}>
+                              {a.status === 'concluida' ? '✓ Concluída' : 'Pendente'}
+                            </Badge>
+                          </td>
+                          <td className="px-4 py-2.5">
+                            {a.status === 'pendente' && (
+                              <button onClick={() => copy(a.token)}
+                                className="text-blue-600 hover:text-blue-800 text-xs underline underline-offset-2">
+                                {copied === a.token ? '✓ Copiado!' : 'Copiar link'}
+                              </button>
+                            )}
+                          </td>
+                          <td className="px-4 py-2.5 text-right">
+                            {a.status === 'pendente' && (
+                              <button onClick={() => remove(a.id)} className="text-red-400 hover:text-red-600 text-xs">remover</button>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
               </div>
             )
           })}
         </div>
       )}
+
+      {/* ── NPS Cliente ── */}
+      <div className="border-t border-gray-200 pt-5">
+        <h3 className="font-semibold text-gray-700 mb-1 text-sm">NPS Cliente</h3>
+        <p className="text-xs text-gray-400 mb-3">
+          Gere links para clientes avaliarem a obra (4 perguntas). A média substituirá o valor manual de NPS Cliente.
+        </p>
+        <form onSubmit={addCliente} className="flex gap-2 mb-3">
+          <input className={`${inp} flex-1`} value={clienteLabel}
+            onChange={e => setClienteLabel(e.target.value)}
+            placeholder="Identificação do cliente (opcional)" />
+          <button type="submit" disabled={savingCliente}
+            className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 disabled:opacity-50 whitespace-nowrap">
+            {savingCliente ? 'Gerando...' : '+ Link Cliente'}
+          </button>
+        </form>
+        {obra.avaliacoesCliente.map(ac => (
+          <div key={ac.id} className="flex items-center justify-between bg-white border border-gray-200 rounded-lg px-4 py-2.5 mb-2">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-700">{ac.label ?? 'Cliente sem nome'}</span>
+              <Badge color={ac.status === 'concluida' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}>
+                {ac.status === 'concluida' ? '✓ Respondida' : 'Aguardando'}
+              </Badge>
+            </div>
+            <div className="flex items-center gap-3">
+              {ac.status === 'pendente' && (
+                <button onClick={() => copy(ac.token, 'cliente')}
+                  className="text-green-600 hover:text-green-800 text-xs underline underline-offset-2">
+                  {copied === ac.token ? '✓ Copiado!' : 'Copiar link'}
+                </button>
+              )}
+              {ac.status === 'pendente' && (
+                <button onClick={() => removeCliente(ac.id)} className="text-red-400 hover:text-red-600 text-xs">remover</button>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }

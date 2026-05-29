@@ -45,6 +45,7 @@ model Avaliacao {
   avaliador    Pessoa    @relation("avaliador", fields: [avaliadorId], references: [id])
   avaliadoId   String
   avaliado     Pessoa    @relation("avaliado", fields: [avaliadoId], references: [id])
+  grupoToken   String?
   status       String    @default("pendente")
   q1           Float?
   q2           Float?
