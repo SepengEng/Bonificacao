@@ -26,18 +26,29 @@ interface Obra {
   pessoas: Pessoa[]; avaliacoes: Avaliacao[]; avaliacoesCliente: AvaliacaoCliente[]
 }
 
-const inp = 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'
-
-function Badge({ children, color }: { children: React.ReactNode; color: string }) {
-  return <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${color}`}>{children}</span>
+function Badge({ children, bg, color }: { children: React.ReactNode; bg: string; color: string }) {
+  return (
+    <span style={{
+      display: 'inline-block', padding: '1px 8px', borderRadius: 20,
+      fontSize: 12, fontWeight: 500, background: bg, color,
+    }}>
+      {children}
+    </span>
+  )
 }
 
 function ScoreCard({ label, pts, max, highlight }: { label: string; pts: number; max?: number; highlight?: boolean }) {
   return (
-    <div className={`rounded-lg p-3 text-center ${highlight ? 'bg-blue-600 text-white' : 'bg-white/70'}`}>
-      <div className={`text-2xl font-bold ${highlight ? 'text-white' : 'text-blue-700'}`}>{pts}</div>
-      <div className={`text-xs mt-0.5 ${highlight ? 'text-blue-100' : 'text-gray-500'}`}>{label}</div>
-      {max && <div className={`text-xs ${highlight ? 'text-blue-200' : 'text-gray-400'}`}>máx {max}</div>}
+    <div style={{
+      borderRadius: 10, padding: '12px 8px', textAlign: 'center',
+      background: highlight
+        ? 'linear-gradient(135deg, var(--teal), var(--blue))'
+        : 'rgba(42,185,176,0.07)',
+      border: highlight ? 'none' : '1px solid rgba(42,185,176,0.15)',
+    }}>
+      <div style={{ fontSize: 22, fontWeight: 700, color: highlight ? 'white' : 'var(--teal)' }}>{pts}</div>
+      <div style={{ fontSize: 11, marginTop: 2, color: highlight ? 'rgba(255,255,255,0.8)' : 'var(--muted)' }}>{label}</div>
+      {max && <div style={{ fontSize: 11, color: highlight ? 'rgba(255,255,255,0.5)' : 'var(--muted)' }}>máx {max}</div>}
     </div>
   )
 }
@@ -99,8 +110,8 @@ export default function ObraPage() {
     setSalvando(false)
   }
 
-  if (loading) return <div className="text-center py-12 text-gray-400">Carregando...</div>
-  if (!obra)   return <div className="text-center py-12 text-red-500">Obra não encontrada.</div>
+  if (loading) return <div style={{ textAlign: 'center', padding: '48px 0', color: 'var(--muted)', fontSize: 14 }}>Carregando...</div>
+  if (!obra)   return <div style={{ textAlign: 'center', padding: '48px 0', color: '#EF4444', fontSize: 14 }}>Obra não encontrada.</div>
 
   const scoreBase  = calcularScoreBase(obra)
   const prazoPts   = PRAZO_OPCOES[obra.prazoOpcao]?.pontos ?? 0
@@ -115,45 +126,47 @@ export default function ObraPage() {
   ]
 
   return (
-    <div className="max-w-5xl mx-auto px-4">
-      <div className="flex items-start justify-between gap-3 mb-5">
-        <div className="flex items-start gap-3">
-          <button onClick={() => router.push('/')} className="mt-1 text-gray-400 hover:text-gray-600 text-xl leading-none">←</button>
+    <div>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+          <button
+            onClick={() => router.push('/')}
+            style={{ marginTop: 2, color: 'var(--muted)', fontSize: 20, background: 'none', border: 'none', cursor: 'pointer', lineHeight: 1 }}
+          >←</button>
           <div>
-            <h1 className="text-xl font-bold text-gray-900">{obra.nome}</h1>
-            <p className="text-sm text-gray-500">{formatarMoeda(obra.valorContrato)}</p>
+            <h1 style={{ fontSize: 20, fontWeight: 700, color: 'var(--fg)' }}>{obra.nome}</h1>
+            <p style={{ fontSize: 13, color: 'var(--muted)', marginTop: 2 }}>{formatarMoeda(obra.valorContrato)}</p>
           </div>
         </div>
-        <button
-          onClick={abrirEdicao}
-          className="text-xs text-gray-400 hover:text-blue-600 border border-gray-200 hover:border-blue-300 rounded-lg px-3 py-1.5 transition-colors mt-1"
-        >
+        <button onClick={abrirEdicao} className="btn-ghost" style={{ marginTop: 2, fontSize: 12 }}>
           Editar dados
         </button>
       </div>
 
+      {/* Edit panel */}
       {editando && (
-        <div className="mb-5 bg-white border border-blue-200 rounded-xl p-5 shadow-sm">
-          <h2 className="font-semibold text-gray-800 mb-4 text-sm">Editar dados da obra</h2>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="col-span-2">
-              <label className="text-xs text-gray-500 font-medium block mb-1">Nome da obra</label>
-              <input className={inp} value={editForm.nome}
+        <div className="card" style={{ marginBottom: 20, padding: 20, borderColor: 'rgba(42,185,176,0.3)' }}>
+          <h2 style={{ fontWeight: 600, color: 'var(--fg)', marginBottom: 16, fontSize: 14 }}>Editar dados da obra</h2>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+            <div style={{ gridColumn: '1 / -1' }}>
+              <label style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 500, display: 'block', marginBottom: 4 }}>Nome da obra</label>
+              <input value={editForm.nome}
                 onChange={e => setEditForm(f => ({ ...f, nome: e.target.value }))} />
             </div>
             <div>
-              <label className="text-xs text-gray-500 font-medium block mb-1">Valor do contrato (R$)</label>
-              <input className={inp} type="number" step="0.01" value={editForm.valorContrato}
+              <label style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 500, display: 'block', marginBottom: 4 }}>Valor do contrato (R$)</label>
+              <input type="number" step="0.01" value={editForm.valorContrato}
                 onChange={e => setEditForm(f => ({ ...f, valorContrato: e.target.value }))} />
             </div>
             <div>
-              <label className="text-xs text-gray-500 font-medium block mb-1">Custos totais (R$)</label>
-              <input className={inp} type="number" step="0.01" value={editForm.custosTotais}
+              <label style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 500, display: 'block', marginBottom: 4 }}>Custos totais (R$)</label>
+              <input type="number" step="0.01" value={editForm.custosTotais}
                 onChange={e => setEditForm(f => ({ ...f, custosTotais: e.target.value }))} />
             </div>
             <div>
-              <label className="text-xs text-gray-500 font-medium block mb-1">Prazo</label>
-              <select className={inp} value={editForm.prazoOpcao}
+              <label style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 500, display: 'block', marginBottom: 4 }}>Prazo</label>
+              <select value={editForm.prazoOpcao}
                 onChange={e => setEditForm(f => ({ ...f, prazoOpcao: e.target.value }))}>
                 {Object.entries(PRAZO_OPCOES).map(([k, v]) => (
                   <option key={k} value={k}>{v.label} ({v.pontos} pts)</option>
@@ -161,8 +174,8 @@ export default function ObraPage() {
               </select>
             </div>
             <div>
-              <label className="text-xs text-gray-500 font-medium block mb-1">Custo</label>
-              <select className={inp} value={editForm.custoOpcao}
+              <label style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 500, display: 'block', marginBottom: 4 }}>Custo</label>
+              <select value={editForm.custoOpcao}
                 onChange={e => setEditForm(f => ({ ...f, custoOpcao: e.target.value }))}>
                 {Object.entries(CUSTO_OPCOES).map(([k, v]) => (
                   <option key={k} value={k}>{v.label} ({v.pontos} pts)</option>
@@ -170,55 +183,61 @@ export default function ObraPage() {
               </select>
             </div>
             <div>
-              <label className="text-xs text-gray-500 font-medium block mb-1">NPS Cliente (média 0–5)</label>
-              <input className={inp} type="number" step="0.1" min="0" max="5" value={editForm.clienteMedia}
+              <label style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 500, display: 'block', marginBottom: 4 }}>NPS Cliente (média 0–5)</label>
+              <input type="number" step="0.1" min="0" max="5" value={editForm.clienteMedia}
                 onChange={e => setEditForm(f => ({ ...f, clienteMedia: e.target.value }))} />
             </div>
-            <div className="flex items-center gap-3 pt-5">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" className="w-4 h-4" checked={editForm.segurancaOk}
-                  onChange={e => setEditForm(f => ({ ...f, segurancaOk: e.target.checked }))} />
-                <span className="text-sm text-gray-700">Segurança OK (15 pts)</span>
+            <div style={{ display: 'flex', alignItems: 'center', paddingTop: 20 }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 14, color: 'var(--fg)' }}>
+                <input type="checkbox" checked={editForm.segurancaOk}
+                  onChange={e => setEditForm(f => ({ ...f, segurancaOk: e.target.checked }))}
+                  style={{ width: 16, height: 16, accentColor: 'var(--teal)' }} />
+                Segurança OK (15 pts)
               </label>
             </div>
           </div>
-          <div className="flex gap-2 mt-4">
-            <button
-              onClick={salvarObra} disabled={salvando}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white text-sm font-medium rounded-lg transition-colors"
-            >
+          <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+            <button onClick={salvarObra} disabled={salvando} className="btn-primary">
               {salvando ? 'Salvando...' : 'Salvar'}
             </button>
-            <button
-              onClick={() => setEditando(false)}
-              className="px-4 py-2 border border-gray-300 text-gray-600 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors"
-            >
+            <button onClick={() => setEditando(false)} className="btn-ghost">
               Cancelar
             </button>
           </div>
         </div>
       )}
 
-      <div className={`mb-5 p-4 rounded-xl border ${scoreBase.eliminatorio ? 'bg-red-50 border-red-200' : 'bg-blue-50 border-blue-200'}`}>
+      {/* Score panel */}
+      <div style={{
+        marginBottom: 20, padding: 16, borderRadius: 12,
+        border: `1px solid ${scoreBase.eliminatorio ? 'rgba(239,68,68,0.3)' : 'rgba(42,185,176,0.2)'}`,
+        background: scoreBase.eliminatorio ? 'rgba(239,68,68,0.05)' : 'rgba(42,185,176,0.06)',
+      }}>
         {scoreBase.eliminatorio ? (
-          <p className="text-red-700 font-semibold text-sm">⚠️ Bonificação ELIMINADA — desvio de custo superior a 5%</p>
+          <p style={{ color: '#DC2626', fontWeight: 600, fontSize: 14 }}>⚠️ Bonificação ELIMINADA — desvio de custo superior a 5%</p>
         ) : (
-          <div className="grid grid-cols-5 gap-2">
-            <ScoreCard label="Prazo"     pts={prazoPts}   max={35} />
-            <ScoreCard label="Custo"     pts={custoPts}   max={35} />
-            <ScoreCard label="Cliente"   pts={clientePts} max={15} />
-            <ScoreCard label="Segurança" pts={segPts}     max={15} />
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8 }}>
+            <ScoreCard label="Prazo"      pts={prazoPts}         max={35} />
+            <ScoreCard label="Custo"      pts={custoPts}         max={35} />
+            <ScoreCard label="Cliente"    pts={clientePts}       max={15} />
+            <ScoreCard label="Segurança"  pts={segPts}           max={15} />
             <ScoreCard label="Score base" pts={scoreBase.pontos} highlight />
           </div>
         )}
       </div>
 
-      <div className="flex gap-1 border-b border-gray-200 mb-6">
+      {/* Tabs */}
+      <div style={{ display: 'flex', gap: 4, borderBottom: '1px solid var(--border)', marginBottom: 24 }}>
         {tabs.map(([t, label]) => (
-          <button key={t} onClick={() => setTab(t)}
-            className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
-              tab === t ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'
-            }`}>
+          <button key={t} onClick={() => setTab(t)} style={{
+            padding: '8px 16px', fontSize: 14,
+            fontWeight: tab === t ? 600 : 400,
+            borderTop: 'none', borderLeft: 'none', borderRight: 'none',
+            borderBottom: `2px solid ${tab === t ? 'var(--teal)' : 'transparent'}`,
+            marginBottom: -1,
+            color: tab === t ? 'var(--teal)' : 'var(--muted)',
+            background: 'none', cursor: 'pointer', transition: 'color 0.15s',
+          }}>
             {label}
           </button>
         ))}
@@ -265,29 +284,28 @@ function TabPessoas({ obra, onReload }: { obra: Obra; onReload: () => void }) {
   const setores   = ['lideranca', 'suprimento', 'orcamento'] as const
   const pools: Record<string, number> = { lideranca: 0.73, suprimento: 0.07, orcamento: 0.20 }
 
-  // Group pessoas
   const diretores     = obra.pessoas.filter(p => p.tipo === 'diretor')
   const colaboradores = obra.pessoas.filter(p => p.tipo !== 'diretor')
 
   return (
-    <div className="space-y-6">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
       {/* Add form */}
-      <form onSubmit={add} className="bg-white border border-gray-200 rounded-xl p-4">
-        <h3 className="font-medium text-gray-700 mb-3 text-sm">Adicionar pessoa</h3>
-        <div className="grid grid-cols-3 gap-3 mb-3">
+      <form onSubmit={add} className="card" style={{ padding: 16 }}>
+        <h3 style={{ fontWeight: 600, color: 'var(--fg)', marginBottom: 12, fontSize: 14 }}>Adicionar pessoa</h3>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 12 }}>
           <div>
-            <label className="text-xs text-gray-500 mb-1 block">Nome *</label>
-            <input className={inp} value={form.nome} onChange={e => setForm(f => ({ ...f, nome: e.target.value }))}
+            <label style={{ fontSize: 12, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>Nome *</label>
+            <input value={form.nome} onChange={e => setForm(f => ({ ...f, nome: e.target.value }))}
               placeholder="Nome completo" required />
           </div>
           <div>
-            <label className="text-xs text-gray-500 mb-1 block">Função</label>
-            <input className={inp} value={form.funcao} onChange={e => setForm(f => ({ ...f, funcao: e.target.value }))}
+            <label style={{ fontSize: 12, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>Função</label>
+            <input value={form.funcao} onChange={e => setForm(f => ({ ...f, funcao: e.target.value }))}
               placeholder="Ex: Engenheiro" />
           </div>
           <div>
-            <label className="text-xs text-gray-500 mb-1 block">Tipo *</label>
-            <select className={inp} value={form.tipo} onChange={e => setForm(f => ({ ...f, tipo: e.target.value }))}>
+            <label style={{ fontSize: 12, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>Tipo *</label>
+            <select value={form.tipo} onChange={e => setForm(f => ({ ...f, tipo: e.target.value }))}>
               <option value="colaborador">Colaborador (recebe bonificação)</option>
               <option value="diretor">Diretor (só avalia, sem bonificação)</option>
             </select>
@@ -295,26 +313,25 @@ function TabPessoas({ obra, onReload }: { obra: Obra; onReload: () => void }) {
         </div>
 
         {!isDiretor && (
-          <div className="grid grid-cols-2 gap-3 mb-3">
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
             <div>
-              <label className="text-xs text-gray-500 mb-1 block">Setor *</label>
-              <select className={inp} value={form.setor} onChange={e => setForm(f => ({ ...f, setor: e.target.value }))}>
+              <label style={{ fontSize: 12, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>Setor *</label>
+              <select value={form.setor} onChange={e => setForm(f => ({ ...f, setor: e.target.value }))}>
                 <option value="lideranca">Liderança (73%)</option>
                 <option value="suprimento">Suprimento (7%)</option>
                 <option value="orcamento">Orçamento (20%)</option>
               </select>
             </div>
             <div>
-              <label className="text-xs text-gray-500 mb-1 block">% do pool do setor</label>
-              <input className={inp} type="number" min="0" max="100" step="0.01" value={form.percentual}
+              <label style={{ fontSize: 12, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>% do pool do setor</label>
+              <input type="number" min="0" max="100" step="0.01" value={form.percentual}
                 onChange={e => setForm(f => ({ ...f, percentual: e.target.value }))}
                 placeholder="Ex: 50 para 50%" />
             </div>
           </div>
         )}
 
-        <button type="submit" disabled={saving}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors">
+        <button type="submit" disabled={saving} className="btn-primary">
           {saving ? 'Salvando...' : '+ Adicionar'}
         </button>
       </form>
@@ -322,19 +339,26 @@ function TabPessoas({ obra, onReload }: { obra: Obra; onReload: () => void }) {
       {/* Directors */}
       {diretores.length > 0 && (
         <div>
-          <div className="flex items-center gap-2 mb-2">
-            <h3 className="font-semibold text-gray-700 text-sm">Diretores</h3>
-            <span className="text-xs text-gray-400">(avaliam mas não recebem bonificação)</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+            <h3 style={{ fontWeight: 600, color: 'var(--fg)', fontSize: 14 }}>Diretores</h3>
+            <span style={{ fontSize: 12, color: 'var(--muted)' }}>(avaliam mas não recebem bonificação)</span>
           </div>
-          <div className="space-y-2">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             {diretores.map(p => (
-              <div key={p.id} className="flex items-center justify-between bg-purple-50 border border-purple-100 rounded-lg px-4 py-2.5">
-                <div className="flex items-center gap-2">
-                  <span className="font-medium text-gray-800 text-sm">{p.nome}</span>
-                  {p.funcao && <span className="text-gray-400 text-xs">· {p.funcao}</span>}
-                  <Badge color="bg-purple-100 text-purple-700">Diretor</Badge>
+              <div key={p.id} style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                background: 'rgba(124,58,237,0.05)', border: '1px solid rgba(124,58,237,0.15)',
+                borderRadius: 10, padding: '10px 16px',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontWeight: 500, color: 'var(--fg)', fontSize: 14 }}>{p.nome}</span>
+                  {p.funcao && <span style={{ color: 'var(--muted)', fontSize: 12 }}>· {p.funcao}</span>}
+                  <Badge bg="rgba(124,58,237,0.1)" color="#7C3AED">Diretor</Badge>
                 </div>
-                <button onClick={() => remove(p.id)} className="text-red-400 hover:text-red-600 text-xs">remover</button>
+                <button onClick={() => remove(p.id)}
+                  style={{ color: '#EF4444', fontSize: 12, background: 'none', border: 'none', cursor: 'pointer' }}>
+                  remover
+                </button>
               </div>
             ))}
           </div>
@@ -347,31 +371,41 @@ function TabPessoas({ obra, onReload }: { obra: Obra; onReload: () => void }) {
         const soma    = pessoas.reduce((s, p) => s + (p.percentual ?? 0), 0)
         return (
           <div key={setor}>
-            <div className="flex items-center gap-2 mb-2">
-              <h3 className="font-semibold text-gray-700 text-sm">{SETOR_LABELS[setor]}</h3>
-              <span className="text-xs text-gray-400">({Math.round(pools[setor] * 100)}% da bonificação)</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+              <h3 style={{ fontWeight: 600, color: 'var(--fg)', fontSize: 14 }}>{SETOR_LABELS[setor]}</h3>
+              <span style={{ fontSize: 12, color: 'var(--muted)' }}>({Math.round(pools[setor] * 100)}% da bonificação)</span>
               {pessoas.length > 0 && (
-                <span className={`text-xs ml-auto font-medium ${Math.abs(soma - 1) < 0.001 ? 'text-green-600' : 'text-amber-600'}`}>
+                <span style={{
+                  fontSize: 12, fontWeight: 500, marginLeft: 'auto',
+                  color: Math.abs(soma - 1) < 0.001 ? '#16A34A' : '#D97706',
+                }}>
                   Soma: {Math.round(soma * 100)}%
                 </span>
               )}
             </div>
             {pessoas.length === 0 ? (
-              <p className="text-sm text-gray-400 italic">Nenhum colaborador neste setor.</p>
+              <p style={{ fontSize: 14, color: 'var(--muted)', fontStyle: 'italic' }}>Nenhum colaborador neste setor.</p>
             ) : (
-              <div className="space-y-2">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {pessoas.map(p => (
-                  <div key={p.id} className="flex items-center justify-between bg-white border border-gray-200 rounded-lg px-4 py-2.5">
+                  <div key={p.id} style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    background: 'white', border: '1px solid var(--border)',
+                    borderRadius: 10, padding: '10px 16px',
+                  }}>
                     <div>
-                      <span className="font-medium text-gray-800 text-sm">{p.nome}</span>
-                      {p.funcao && <span className="text-gray-400 text-xs ml-2">· {p.funcao}</span>}
+                      <span style={{ fontWeight: 500, color: 'var(--fg)', fontSize: 14 }}>{p.nome}</span>
+                      {p.funcao && <span style={{ color: 'var(--muted)', fontSize: 12, marginLeft: 8 }}>· {p.funcao}</span>}
                     </div>
-                    <div className="flex items-center gap-4">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
                       {p.percentual != null
-                        ? <span className="text-sm font-semibold text-blue-600">{Math.round(p.percentual * 10000) / 100}%</span>
-                        : <span className="text-xs text-amber-500 italic">sem %</span>
+                        ? <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--teal)' }}>{Math.round(p.percentual * 10000) / 100}%</span>
+                        : <span style={{ fontSize: 12, color: '#D97706', fontStyle: 'italic' }}>sem %</span>
                       }
-                      <button onClick={() => remove(p.id)} className="text-red-400 hover:text-red-600 text-xs">remover</button>
+                      <button onClick={() => remove(p.id)}
+                        style={{ color: '#EF4444', fontSize: 12, background: 'none', border: 'none', cursor: 'pointer' }}>
+                        remover
+                      </button>
                     </div>
                   </div>
                 ))}
@@ -386,15 +420,13 @@ function TabPessoas({ obra, onReload }: { obra: Obra; onReload: () => void }) {
 
 // ─── TAB AVALIAÇÕES ───────────────────────────────────────────────────────────
 function TabAvaliacoes({ obra, onReload }: { obra: Obra; onReload: () => void }) {
-  const [copied,        setCopied]        = useState<string | null>(null)
-  // grupo link state
-  const [grupoAvaliado, setGrupoAvaliado] = useState('')
+  const [copied,            setCopied]            = useState<string | null>(null)
+  const [grupoAvaliado,     setGrupoAvaliado]     = useState('')
   const [grupoSelecionados, setGrupoSelecionados] = useState<string[]>([])
-  const [savingGrupo,   setSavingGrupo]   = useState(false)
-  const [erroGrupo,     setErroGrupo]     = useState('')
-  // cliente state
-  const [clienteLabel,  setClienteLabel]  = useState('')
-  const [savingCliente, setSavingCliente] = useState(false)
+  const [savingGrupo,       setSavingGrupo]       = useState(false)
+  const [erroGrupo,         setErroGrupo]         = useState('')
+  const [clienteLabel,      setClienteLabel]      = useState('')
+  const [savingCliente,     setSavingCliente]     = useState(false)
 
   function copy(token: string, path = 'avaliar') {
     navigator.clipboard.writeText(`${window.location.origin}/${path}/${token}`)
@@ -464,10 +496,9 @@ function TabAvaliacoes({ obra, onReload }: { obra: Obra; onReload: () => void })
     onReload()
   }
 
-  // Build display: group by avaliado, then by grupoToken within
   const avaliadosMap = new Map<string, {
     avaliado: Pessoa
-    grupos: Map<string, Avaliacao[]>   // grupoToken → avaliacoes
+    grupos: Map<string, Avaliacao[]>
     individuais: Avaliacao[]
   }>()
 
@@ -489,28 +520,30 @@ function TabAvaliacoes({ obra, onReload }: { obra: Obra; onReload: () => void })
   const concluidas = obra.avaliacoes.filter(a => a.status === 'concluida').length
   const total      = obra.avaliacoes.length
 
-  // Diretores first, then collaborators, for the evaluator checklist
   const diretores     = obra.pessoas.filter(p => p.tipo === 'diretor')
   const colaboradores = obra.pessoas.filter(p => p.tipo !== 'diretor')
 
   return (
-    <div className="space-y-6">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
       {obra.pessoas.length < 2 && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-700">
+        <div style={{
+          background: 'rgba(217,119,6,0.06)', border: '1px solid rgba(217,119,6,0.2)',
+          borderRadius: 12, padding: 16, fontSize: 14, color: '#92400E',
+        }}>
           Adicione pelo menos 2 pessoas na aba <strong>Pessoas</strong> para gerar avaliações.
         </div>
       )}
 
       {/* ── Link Compartilhado ── */}
-      <form onSubmit={criarGrupo} className="bg-white border border-gray-200 rounded-xl p-4">
-        <h3 className="font-semibold text-gray-700 mb-1 text-sm">Link Compartilhado 360°</h3>
-        <p className="text-xs text-gray-400 mb-4">
+      <form onSubmit={criarGrupo} className="card" style={{ padding: 16 }}>
+        <h3 style={{ fontWeight: 600, color: 'var(--fg)', marginBottom: 4, fontSize: 14 }}>Link Compartilhado 360°</h3>
+        <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 16 }}>
           Um único link para 2–5 avaliadores. Cada um se identifica ao clicar e preenche sua própria avaliação.
         </p>
 
-        <div className="mb-4">
-          <label className="text-xs text-gray-500 mb-1 block font-medium">Quem será avaliado?</label>
-          <select className={inp} value={grupoAvaliado}
+        <div style={{ marginBottom: 16 }}>
+          <label style={{ fontSize: 12, color: 'var(--muted)', display: 'block', marginBottom: 4, fontWeight: 500 }}>Quem será avaliado?</label>
+          <select value={grupoAvaliado}
             onChange={e => { setGrupoAvaliado(e.target.value); setGrupoSelecionados(prev => prev.filter(id => id !== e.target.value)) }}
             required>
             <option value="">Selecione o avaliado...</option>
@@ -520,29 +553,31 @@ function TabAvaliacoes({ obra, onReload }: { obra: Obra; onReload: () => void })
           </select>
         </div>
 
-        <div className="mb-4">
-          <label className="text-xs text-gray-500 mb-2 block font-medium">Quem vai avaliar? (marque 1 a 5)</label>
+        <div style={{ marginBottom: 16 }}>
+          <label style={{ fontSize: 12, color: 'var(--muted)', display: 'block', marginBottom: 8, fontWeight: 500 }}>Quem vai avaliar? (marque 1 a 5)</label>
 
           {diretores.length > 0 && (
-            <div className="mb-2">
-              <p className="text-xs text-purple-600 font-medium mb-1 uppercase tracking-wide">Diretores</p>
-              <div className="space-y-1">
+            <div style={{ marginBottom: 8 }}>
+              <p style={{ fontSize: 11, color: '#7C3AED', fontWeight: 600, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Diretores</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                 {diretores.map(p => {
                   const disabled = p.id === grupoAvaliado
+                  const selected = grupoSelecionados.includes(p.id)
                   return (
-                    <label key={p.id}
-                      className={`flex items-center gap-3 px-3 py-2 rounded-lg border cursor-pointer transition-colors ${
-                        disabled ? 'opacity-40 cursor-not-allowed bg-gray-50 border-gray-100' :
-                        grupoSelecionados.includes(p.id)
-                          ? 'bg-purple-50 border-purple-300'
-                          : 'bg-white border-gray-200 hover:border-purple-200'
-                      }`}>
-                      <input type="checkbox" checked={grupoSelecionados.includes(p.id)}
+                    <label key={p.id} style={{
+                      display: 'flex', alignItems: 'center', gap: 12,
+                      padding: '8px 12px', borderRadius: 8, cursor: disabled ? 'not-allowed' : 'pointer',
+                      opacity: disabled ? 0.4 : 1,
+                      background: selected ? 'rgba(124,58,237,0.06)' : 'white',
+                      border: `1px solid ${selected ? 'rgba(124,58,237,0.3)' : 'var(--border)'}`,
+                      transition: 'border-color 0.15s',
+                    }}>
+                      <input type="checkbox" checked={selected}
                         disabled={disabled}
                         onChange={() => !disabled && toggleAvaliador(p.id)}
-                        className="accent-purple-600" />
-                      <span className="text-sm font-medium text-gray-800">{p.nome}</span>
-                      <span className="text-xs text-purple-500 ml-auto">Diretor</span>
+                        style={{ accentColor: '#7C3AED', width: 'auto' }} />
+                      <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--fg)', flex: 1 }}>{p.nome}</span>
+                      <span style={{ fontSize: 12, color: '#7C3AED' }}>Diretor</span>
                     </label>
                   )
                 })}
@@ -550,113 +585,122 @@ function TabAvaliacoes({ obra, onReload }: { obra: Obra; onReload: () => void })
             </div>
           )}
 
-          <div className="space-y-1">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             {colaboradores.map(p => {
               const disabled = p.id === grupoAvaliado
+              const selected = grupoSelecionados.includes(p.id)
               return (
-                <label key={p.id}
-                  className={`flex items-center gap-3 px-3 py-2 rounded-lg border cursor-pointer transition-colors ${
-                    disabled ? 'opacity-40 cursor-not-allowed bg-gray-50 border-gray-100' :
-                    grupoSelecionados.includes(p.id)
-                      ? 'bg-blue-50 border-blue-300'
-                      : 'bg-white border-gray-200 hover:border-blue-200'
-                  }`}>
-                  <input type="checkbox" checked={grupoSelecionados.includes(p.id)}
+                <label key={p.id} style={{
+                  display: 'flex', alignItems: 'center', gap: 12,
+                  padding: '8px 12px', borderRadius: 8, cursor: disabled ? 'not-allowed' : 'pointer',
+                  opacity: disabled ? 0.4 : 1,
+                  background: selected ? 'rgba(42,185,176,0.07)' : 'white',
+                  border: `1px solid ${selected ? 'rgba(42,185,176,0.35)' : 'var(--border)'}`,
+                  transition: 'border-color 0.15s',
+                }}>
+                  <input type="checkbox" checked={selected}
                     disabled={disabled}
                     onChange={() => !disabled && toggleAvaliador(p.id)}
-                    className="accent-blue-600" />
-                  <span className="text-sm font-medium text-gray-800">{p.nome}</span>
-                  <span className="text-xs text-gray-400 ml-auto">{SETOR_LABELS[p.setor] ?? p.setor}</span>
+                    style={{ accentColor: 'var(--teal)', width: 'auto' }} />
+                  <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--fg)', flex: 1 }}>{p.nome}</span>
+                  <span style={{ fontSize: 12, color: 'var(--muted)' }}>{SETOR_LABELS[p.setor] ?? p.setor}</span>
                 </label>
               )
             })}
           </div>
         </div>
 
-        {erroGrupo && <p className="text-xs text-red-600 mb-2">{erroGrupo}</p>}
-        <button type="submit" disabled={savingGrupo || grupoSelecionados.filter(id => id !== grupoAvaliado).length === 0}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-40 transition-colors">
+        {erroGrupo && <p style={{ fontSize: 12, color: '#DC2626', marginBottom: 8 }}>{erroGrupo}</p>}
+        <button type="submit"
+          disabled={savingGrupo || grupoSelecionados.filter(id => id !== grupoAvaliado).length === 0}
+          className="btn-primary">
           {savingGrupo ? 'Gerando...' : `Gerar Link Compartilhado (${grupoSelecionados.filter(id => id !== grupoAvaliado).length} avaliadores)`}
         </button>
       </form>
 
       {/* Progress bar */}
       {total > 0 && (
-        <div className="flex items-center gap-3 text-sm">
-          <span className="text-gray-600 whitespace-nowrap">{concluidas}/{total} concluídas</span>
-          <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
-            <div className="h-full bg-blue-500 rounded-full transition-all"
-              style={{ width: `${(concluidas / total) * 100}%` }} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 14 }}>
+          <span style={{ color: 'var(--fg)', whiteSpace: 'nowrap' }}>{concluidas}/{total} concluídas</span>
+          <div style={{ flex: 1, height: 6, background: 'var(--border)', borderRadius: 3, overflow: 'hidden' }}>
+            <div style={{
+              height: '100%', background: 'var(--teal)', borderRadius: 3, transition: 'width 0.3s',
+              width: `${(concluidas / total) * 100}%`,
+            }} />
           </div>
         </div>
       )}
 
       {/* Grouped by avaliado */}
       {avaliadosMap.size === 0 ? (
-        <p className="text-center text-sm text-gray-400 py-4 italic">Nenhuma avaliação 360° gerada ainda.</p>
+        <p style={{ textAlign: 'center', fontSize: 14, color: 'var(--muted)', padding: '16px 0', fontStyle: 'italic' }}>
+          Nenhuma avaliação 360° gerada ainda.
+        </p>
       ) : (
-        <div className="space-y-4">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {Array.from(avaliadosMap.values()).map(({ avaliado, grupos, individuais }) => {
-            const todasAv = [
-              ...Array.from(grupos.values()).flat(),
-              ...individuais,
-            ]
+            const todasAv = [...Array.from(grupos.values()).flat(), ...individuais]
             const conc = todasAv.filter(a => a.status === 'concluida').length
             return (
-              <div key={avaliado.id} className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-                <div className="flex items-center justify-between px-4 py-2.5 bg-gray-50 border-b border-gray-100">
-                  <div className="flex items-center gap-2">
-                    <span className="font-semibold text-gray-800 text-sm">{avaliado.nome}</span>
+              <div key={avaliado.id} className="card" style={{ overflow: 'hidden' }}>
+                <div style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  padding: '10px 16px', background: 'var(--bg)', borderBottom: '1px solid var(--border)',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontWeight: 600, color: 'var(--fg)', fontSize: 14 }}>{avaliado.nome}</span>
                     {avaliado.tipo === 'diretor'
-                      ? <Badge color="bg-purple-100 text-purple-700">Diretor</Badge>
-                      : <Badge color="bg-blue-50 text-blue-600">{SETOR_LABELS[avaliado.setor] ?? avaliado.setor}</Badge>
+                      ? <Badge bg="rgba(124,58,237,0.1)" color="#7C3AED">Diretor</Badge>
+                      : <Badge bg="rgba(42,185,176,0.1)" color="var(--teal)">{SETOR_LABELS[avaliado.setor] ?? avaliado.setor}</Badge>
                     }
                   </div>
-                  <span className="text-xs text-gray-500">{conc}/{todasAv.length} concluídas</span>
+                  <span style={{ fontSize: 12, color: 'var(--muted)' }}>{conc}/{todasAv.length} concluídas</span>
                 </div>
 
                 {/* Group links */}
                 {Array.from(grupos.entries()).map(([grupoToken, avs]) => {
                   const gConc = avs.filter(a => a.status === 'concluida').length
                   return (
-                    <div key={grupoToken} className="border-b border-gray-50">
-                      <div className="flex items-center justify-between px-4 py-2 bg-indigo-50">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-semibold text-indigo-600">Link compartilhado</span>
-                          <span className="text-xs text-indigo-400">{gConc}/{avs.length}</span>
+                    <div key={grupoToken} style={{ borderBottom: '1px solid var(--bg)' }}>
+                      <div style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                        padding: '8px 16px', background: 'rgba(42,185,176,0.06)',
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--teal)' }}>Link compartilhado</span>
+                          <span style={{ fontSize: 12, color: 'var(--muted)' }}>{gConc}/{avs.length}</span>
                         </div>
-                        <div className="flex items-center gap-3">
-                          <button
-                            onClick={() => copy(grupoToken, 'avaliar/grupo')}
-                            className="text-indigo-600 hover:text-indigo-800 text-xs underline underline-offset-2">
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                          <button onClick={() => copy(grupoToken, 'avaliar/grupo')}
+                            style={{ color: 'var(--teal)', fontSize: 12, textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer' }}>
                             {copied === grupoToken ? '✓ Copiado!' : 'Copiar link'}
                           </button>
-                          <button
-                            onClick={() => removeGrupo(grupoToken, gConc > 0)}
-                            className="text-red-400 hover:text-red-600 text-xs">
+                          <button onClick={() => removeGrupo(grupoToken, gConc > 0)}
+                            style={{ color: '#EF4444', fontSize: 12, background: 'none', border: 'none', cursor: 'pointer' }}>
                             remover grupo
                           </button>
                         </div>
                       </div>
-                      <table className="w-full text-sm">
-                        <tbody className="divide-y divide-gray-50">
+                      <table style={{ width: '100%', fontSize: 14, borderCollapse: 'collapse' }}>
+                        <tbody>
                           {avs.map(a => (
-                            <tr key={a.id} className="hover:bg-gray-50">
-                              <td className="px-6 py-2 text-gray-600">
+                            <tr key={a.id} style={{ borderTop: '1px solid var(--bg)' }}>
+                              <td style={{ padding: '8px 24px', color: 'var(--fg)' }}>
                                 <span>{a.avaliador.nome}</span>
                                 {a.avaliador.tipo === 'diretor' && (
-                                  <span className="text-purple-500 text-xs ml-1.5">(Diretor)</span>
+                                  <span style={{ color: '#7C3AED', fontSize: 12, marginLeft: 6 }}>(Diretor)</span>
                                 )}
                               </td>
-                              <td className="px-4 py-2">
-                                <Badge color={a.status === 'concluida' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}>
+                              <td style={{ padding: '8px 16px' }}>
+                                <Badge
+                                  bg={a.status === 'concluida' ? 'rgba(22,163,74,0.1)' : 'rgba(217,119,6,0.1)'}
+                                  color={a.status === 'concluida' ? '#16A34A' : '#D97706'}>
                                   {a.status === 'concluida' ? '✓ Concluída' : 'Pendente'}
                                 </Badge>
                               </td>
-                              <td className="px-4 py-2 text-right">
-                                <button
-                                  onClick={() => remove(a.id, a.status === 'concluida')}
-                                  className="text-red-400 hover:text-red-600 text-xs">
+                              <td style={{ padding: '8px 16px', textAlign: 'right' }}>
+                                <button onClick={() => remove(a.id, a.status === 'concluida')}
+                                  style={{ color: '#EF4444', fontSize: 12, background: 'none', border: 'none', cursor: 'pointer' }}>
                                   remover
                                 </button>
                               </td>
@@ -670,33 +714,34 @@ function TabAvaliacoes({ obra, onReload }: { obra: Obra; onReload: () => void })
 
                 {/* Individual links */}
                 {individuais.length > 0 && (
-                  <table className="w-full text-sm">
-                    <tbody className="divide-y divide-gray-50">
+                  <table style={{ width: '100%', fontSize: 14, borderCollapse: 'collapse' }}>
+                    <tbody>
                       {individuais.map(a => (
-                        <tr key={a.id} className="hover:bg-gray-50">
-                          <td className="px-4 py-2.5 text-gray-700">
-                            <span className="font-medium">{a.avaliador.nome}</span>
+                        <tr key={a.id} style={{ borderTop: '1px solid var(--bg)' }}>
+                          <td style={{ padding: '10px 16px', color: 'var(--fg)' }}>
+                            <span style={{ fontWeight: 500 }}>{a.avaliador.nome}</span>
                             {a.avaliador.tipo === 'diretor' && (
-                              <span className="text-purple-500 text-xs ml-1.5">(Diretor)</span>
+                              <span style={{ color: '#7C3AED', fontSize: 12, marginLeft: 6 }}>(Diretor)</span>
                             )}
                           </td>
-                          <td className="px-4 py-2.5">
-                            <Badge color={a.status === 'concluida' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}>
+                          <td style={{ padding: '10px 16px' }}>
+                            <Badge
+                              bg={a.status === 'concluida' ? 'rgba(22,163,74,0.1)' : 'rgba(217,119,6,0.1)'}
+                              color={a.status === 'concluida' ? '#16A34A' : '#D97706'}>
                               {a.status === 'concluida' ? '✓ Concluída' : 'Pendente'}
                             </Badge>
                           </td>
-                          <td className="px-4 py-2.5">
+                          <td style={{ padding: '10px 16px' }}>
                             {a.status === 'pendente' && (
                               <button onClick={() => copy(a.token)}
-                                className="text-blue-600 hover:text-blue-800 text-xs underline underline-offset-2">
+                                style={{ color: 'var(--teal)', fontSize: 12, textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer' }}>
                                 {copied === a.token ? '✓ Copiado!' : 'Copiar link'}
                               </button>
                             )}
                           </td>
-                          <td className="px-4 py-2.5 text-right">
-                            <button
-                              onClick={() => remove(a.id, a.status === 'concluida')}
-                              className="text-red-400 hover:text-red-600 text-xs">
+                          <td style={{ padding: '10px 16px', textAlign: 'right' }}>
+                            <button onClick={() => remove(a.id, a.status === 'concluida')}
+                              style={{ color: '#EF4444', fontSize: 12, background: 'none', border: 'none', cursor: 'pointer' }}>
                               remover
                             </button>
                           </td>
@@ -712,37 +757,45 @@ function TabAvaliacoes({ obra, onReload }: { obra: Obra; onReload: () => void })
       )}
 
       {/* ── NPS Cliente ── */}
-      <div className="border-t border-gray-200 pt-5">
-        <h3 className="font-semibold text-gray-700 mb-1 text-sm">NPS Cliente</h3>
-        <p className="text-xs text-gray-400 mb-3">
+      <div style={{ borderTop: '1px solid var(--border)', paddingTop: 20 }}>
+        <h3 style={{ fontWeight: 600, color: 'var(--fg)', marginBottom: 4, fontSize: 14 }}>NPS Cliente</h3>
+        <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 12 }}>
           Gere links para clientes avaliarem a obra (4 perguntas). A média substituirá o valor manual de NPS Cliente.
         </p>
-        <form onSubmit={addCliente} className="flex gap-2 mb-3">
-          <input className={`${inp} flex-1`} value={clienteLabel}
-            onChange={e => setClienteLabel(e.target.value)}
-            placeholder="Identificação do cliente (opcional)" />
-          <button type="submit" disabled={savingCliente}
-            className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 disabled:opacity-50 whitespace-nowrap">
+        <form onSubmit={addCliente} style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+          <input value={clienteLabel} onChange={e => setClienteLabel(e.target.value)}
+            placeholder="Identificação do cliente (opcional)"
+            style={{ flex: 1, minWidth: 0 }} />
+          <button type="submit" disabled={savingCliente} className="btn-primary" style={{ whiteSpace: 'nowrap' }}>
             {savingCliente ? 'Gerando...' : '+ Link Cliente'}
           </button>
         </form>
         {obra.avaliacoesCliente.map(ac => (
-          <div key={ac.id} className="flex items-center justify-between bg-white border border-gray-200 rounded-lg px-4 py-2.5 mb-2">
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-700">{ac.label ?? 'Cliente sem nome'}</span>
-              <Badge color={ac.status === 'concluida' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}>
+          <div key={ac.id} style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            background: 'white', border: '1px solid var(--border)', borderRadius: 10,
+            padding: '10px 16px', marginBottom: 8,
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 14, color: 'var(--fg)' }}>{ac.label ?? 'Cliente sem nome'}</span>
+              <Badge
+                bg={ac.status === 'concluida' ? 'rgba(22,163,74,0.1)' : 'rgba(217,119,6,0.1)'}
+                color={ac.status === 'concluida' ? '#16A34A' : '#D97706'}>
                 {ac.status === 'concluida' ? '✓ Respondida' : 'Aguardando'}
               </Badge>
             </div>
-            <div className="flex items-center gap-3">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               {ac.status === 'pendente' && (
                 <button onClick={() => copy(ac.token, 'cliente')}
-                  className="text-green-600 hover:text-green-800 text-xs underline underline-offset-2">
+                  style={{ color: 'var(--teal)', fontSize: 12, textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer' }}>
                   {copied === ac.token ? '✓ Copiado!' : 'Copiar link'}
                 </button>
               )}
               {ac.status === 'pendente' && (
-                <button onClick={() => removeCliente(ac.id)} className="text-red-400 hover:text-red-600 text-xs">remover</button>
+                <button onClick={() => removeCliente(ac.id)}
+                  style={{ color: '#EF4444', fontSize: 12, background: 'none', border: 'none', cursor: 'pointer' }}>
+                  remover
+                </button>
               )}
             </div>
           </div>
@@ -764,13 +817,13 @@ function TabResultados({ obraId }: { obraId: string }) {
       .then(d => { setData(d); setLoading(false) })
   }, [obraId])
 
-  if (loading) return <div className="text-center py-10 text-gray-400">Calculando...</div>
+  if (loading) return <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--muted)', fontSize: 14 }}>Calculando...</div>
 
   if (data?.eliminatorio) {
     return (
-      <div className="bg-red-50 border border-red-200 rounded-xl p-8 text-center">
-        <p className="text-red-700 font-bold text-lg">Bonificação Eliminada</p>
-        <p className="text-red-500 text-sm mt-1">Desvio de custo superior a 5% cancela toda a bonificação desta obra.</p>
+      <div style={{ background: 'rgba(239,68,68,0.05)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 12, padding: 32, textAlign: 'center' }}>
+        <p style={{ color: '#DC2626', fontWeight: 700, fontSize: 18 }}>Bonificação Eliminada</p>
+        <p style={{ color: '#EF4444', fontSize: 14, marginTop: 4 }}>Desvio de custo superior a 5% cancela toda a bonificação desta obra.</p>
       </div>
     )
   }
@@ -781,30 +834,33 @@ function TabResultados({ obraId }: { obraId: string }) {
   const { pilares } = data
 
   return (
-    <div className="space-y-6">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
       {/* Financial summary */}
-      <div className="bg-white border border-gray-200 rounded-xl p-5">
-        <h3 className="font-semibold text-gray-700 mb-4">Cálculo Financeiro</h3>
-        <div className="grid grid-cols-3 gap-4 mb-4">
-          <div className="text-center p-3 bg-gray-50 rounded-lg">
-            <p className="text-xs text-gray-500 mb-1">Resultado Operacional</p>
-            <p className="font-bold text-gray-900">{formatarMoeda(data.resultado)}</p>
-            <p className="text-xs text-gray-400 mt-0.5">Contrato − Custos − 7% TAC</p>
+      <div className="card" style={{ padding: 20 }}>
+        <h3 style={{ fontWeight: 600, color: 'var(--fg)', marginBottom: 16, fontSize: 15 }}>Cálculo Financeiro</h3>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 16 }}>
+          <div style={{ textAlign: 'center', padding: 12, background: 'var(--bg)', borderRadius: 10 }}>
+            <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 4 }}>Resultado Operacional</p>
+            <p style={{ fontWeight: 700, color: 'var(--fg)', fontSize: 16 }}>{formatarMoeda(data.resultado)}</p>
+            <p style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>Contrato − Custos − 7% TAC</p>
           </div>
-          <div className="text-center p-3 bg-gray-50 rounded-lg">
-            <p className="text-xs text-gray-500 mb-1">% aplicado ao contrato</p>
-            <p className="font-bold text-gray-900">{Math.round(data.pctContrato * 100)}%</p>
+          <div style={{ textAlign: 'center', padding: 12, background: 'var(--bg)', borderRadius: 10 }}>
+            <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 4 }}>% aplicado ao contrato</p>
+            <p style={{ fontWeight: 700, color: 'var(--fg)', fontSize: 16 }}>{Math.round(data.pctContrato * 100)}%</p>
           </div>
-          <div className="text-center p-3 bg-blue-50 border border-blue-200 rounded-lg">
-            <p className="text-xs text-blue-600 mb-1">Bonificação Total</p>
-            <p className="font-bold text-blue-700 text-xl">{formatarMoeda(data.bonificacaoTotal)}</p>
+          <div style={{
+            textAlign: 'center', padding: 12, borderRadius: 10,
+            background: 'rgba(42,185,176,0.08)', border: '1px solid rgba(42,185,176,0.2)',
+          }}>
+            <p style={{ fontSize: 12, color: 'var(--teal)', marginBottom: 4 }}>Bonificação Total</p>
+            <p style={{ fontWeight: 700, color: 'var(--teal)', fontSize: 20 }}>{formatarMoeda(data.bonificacaoTotal)}</p>
           </div>
         </div>
-        <div className="grid grid-cols-3 gap-3">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
           {setores.map(s => (
-            <div key={s} className="text-center p-2.5 bg-slate-50 rounded-lg">
-              <p className="text-xs text-gray-500">{SETOR_LABELS[s]}</p>
-              <p className="font-semibold text-gray-800">{formatarMoeda(data.poolPorSetor?.[s] ?? 0)}</p>
+            <div key={s} style={{ textAlign: 'center', padding: 10, background: 'var(--bg)', borderRadius: 8 }}>
+              <p style={{ fontSize: 12, color: 'var(--muted)' }}>{SETOR_LABELS[s]}</p>
+              <p style={{ fontWeight: 600, color: 'var(--fg)', fontSize: 14 }}>{formatarMoeda(data.poolPorSetor?.[s] ?? 0)}</p>
             </div>
           ))}
         </div>
@@ -815,25 +871,28 @@ function TabResultados({ obraId }: { obraId: string }) {
         const pessoas = (data.pessoas ?? []).filter((p: any) => p.setor === setor)
         if (pessoas.length === 0) return null
         return (
-          <div key={setor} className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-            <div className="px-5 py-2.5 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
-              <h3 className="font-semibold text-gray-700">{SETOR_LABELS[setor]}</h3>
-              <span className="text-xs text-gray-400">{formatarMoeda(data.poolPorSetor?.[setor] ?? 0)} no pool</span>
+          <div key={setor} className="card" style={{ overflow: 'hidden' }}>
+            <div style={{
+              padding: '10px 20px', background: 'var(--bg)', borderBottom: '1px solid var(--border)',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            }}>
+              <h3 style={{ fontWeight: 600, color: 'var(--fg)', fontSize: 15 }}>{SETOR_LABELS[setor]}</h3>
+              <span style={{ fontSize: 12, color: 'var(--muted)' }}>{formatarMoeda(data.poolPorSetor?.[setor] ?? 0)} no pool</span>
             </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="border-b border-gray-100">
-                  <tr className="bg-slate-50">
-                    <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-500">Nome</th>
-                    <th className="px-3 py-2.5 text-center text-xs font-semibold text-gray-500">Prazo</th>
-                    <th className="px-3 py-2.5 text-center text-xs font-semibold text-gray-500">Custo</th>
-                    <th className="px-3 py-2.5 text-center text-xs font-semibold text-gray-500">NPS Cultural</th>
-                    <th className="px-3 py-2.5 text-center text-xs font-semibold text-gray-500">Cliente</th>
-                    <th className="px-3 py-2.5 text-center text-xs font-semibold text-gray-500">Segurança</th>
-                    <th className="px-3 py-2.5 text-center text-xs font-semibold text-gray-700">Score</th>
-                    <th className="px-3 py-2.5 text-center text-xs font-semibold text-gray-700">%</th>
-                    <th className="px-4 py-2.5 text-right text-xs font-semibold text-gray-500">Pool</th>
-                    <th className="px-4 py-2.5 text-right text-xs font-semibold text-gray-700">Valor Final</th>
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', fontSize: 14, borderCollapse: 'collapse' }}>
+                <thead style={{ borderBottom: '1px solid var(--border)' }}>
+                  <tr style={{ background: 'var(--bg)' }}>
+                    <th style={{ padding: '10px 16px', textAlign: 'left',   fontSize: 12, fontWeight: 600, color: 'var(--muted)' }}>Nome</th>
+                    <th style={{ padding: '10px 12px', textAlign: 'center', fontSize: 12, fontWeight: 600, color: 'var(--muted)' }}>Prazo</th>
+                    <th style={{ padding: '10px 12px', textAlign: 'center', fontSize: 12, fontWeight: 600, color: 'var(--muted)' }}>Custo</th>
+                    <th style={{ padding: '10px 12px', textAlign: 'center', fontSize: 12, fontWeight: 600, color: 'var(--muted)' }}>NPS Cultural</th>
+                    <th style={{ padding: '10px 12px', textAlign: 'center', fontSize: 12, fontWeight: 600, color: 'var(--muted)' }}>Cliente</th>
+                    <th style={{ padding: '10px 12px', textAlign: 'center', fontSize: 12, fontWeight: 600, color: 'var(--muted)' }}>Segurança</th>
+                    <th style={{ padding: '10px 12px', textAlign: 'center', fontSize: 12, fontWeight: 600, color: 'var(--fg)' }}>Score</th>
+                    <th style={{ padding: '10px 12px', textAlign: 'center', fontSize: 12, fontWeight: 600, color: 'var(--fg)' }}>%</th>
+                    <th style={{ padding: '10px 16px', textAlign: 'right',  fontSize: 12, fontWeight: 600, color: 'var(--muted)' }}>Pool</th>
+                    <th style={{ padding: '10px 16px', textAlign: 'right',  fontSize: 12, fontWeight: 600, color: 'var(--fg)' }}>Valor Final</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -841,55 +900,63 @@ function TabResultados({ obraId }: { obraId: string }) {
                     const aberto = expandido === p.id
                     return (
                       <>
-                        <tr key={p.id} className={`border-t border-gray-50 ${aberto ? 'bg-blue-50' : 'hover:bg-gray-50'}`}>
-                          <td className="px-4 py-3">
-                            <p className="font-medium text-gray-800">{p.nome}</p>
-                            {p.funcao && <p className="text-xs text-gray-400">{p.funcao}</p>}
+                        <tr key={p.id} style={{
+                          borderTop: '1px solid var(--border)',
+                          background: aberto ? 'rgba(42,185,176,0.04)' : 'white',
+                        }}>
+                          <td style={{ padding: '12px 16px' }}>
+                            <p style={{ fontWeight: 500, color: 'var(--fg)', fontSize: 14 }}>{p.nome}</p>
+                            {p.funcao && <p style={{ fontSize: 12, color: 'var(--muted)' }}>{p.funcao}</p>}
                             {p.avaliacoesTotal > 0 && (
-                              <button
-                                onClick={() => setExpandido(aberto ? null : p.id)}
-                                className="text-xs text-blue-600 hover:text-blue-800 mt-0.5 underline underline-offset-2"
-                              >
+                              <button onClick={() => setExpandido(aberto ? null : p.id)}
+                                style={{ fontSize: 12, color: 'var(--teal)', marginTop: 2, textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer' }}>
                                 {aberto ? '▲ ocultar' : `▼ ${p.avaliacoesConcluidas}/${p.avaliacoesTotal} avaliadores`}
                               </button>
                             )}
                           </td>
-                          <td className="px-3 py-3 text-center text-gray-700 font-medium">{pilares.prazo}</td>
-                          <td className="px-3 py-3 text-center text-gray-700 font-medium">{pilares.custo}</td>
-                          <td className="px-3 py-3 text-center">
+                          <td style={{ padding: '12px', textAlign: 'center', color: 'var(--fg)', fontWeight: 500 }}>{pilares.prazo}</td>
+                          <td style={{ padding: '12px', textAlign: 'center', color: 'var(--fg)', fontWeight: 500 }}>{pilares.custo}</td>
+                          <td style={{ padding: '12px', textAlign: 'center' }}>
                             {p.mediaNpsCultural != null ? (
                               <div>
-                                <span className="font-semibold text-gray-800">{p.npsCulturalPts}</span>
-                                <span className="text-xs text-gray-400 block">média {p.mediaNpsCultural.toFixed(2)}</span>
+                                <span style={{ fontWeight: 600, color: 'var(--fg)' }}>{p.npsCulturalPts}</span>
+                                <span style={{ fontSize: 11, color: 'var(--muted)', display: 'block' }}>média {p.mediaNpsCultural.toFixed(2)}</span>
                               </div>
                             ) : (
-                              <span className="text-xs text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full">
+                              <span style={{ fontSize: 12, color: '#D97706', background: 'rgba(217,119,6,0.1)', padding: '2px 6px', borderRadius: 20 }}>
                                 {p.avaliacoesTotal === 0 ? 'sem aval.' : `${p.avaliacoesPendentes} pend.`}
                               </span>
                             )}
                           </td>
-                          <td className="px-3 py-3 text-center text-gray-700 font-medium">{pilares.cliente}</td>
-                          <td className="px-3 py-3 text-center text-gray-700 font-medium">{pilares.seguranca}</td>
-                          <td className="px-3 py-3 text-center">
-                            <span className="font-bold text-gray-900 text-base">{p.scoreIndividual ?? '—'}</span>
+                          <td style={{ padding: '12px', textAlign: 'center', color: 'var(--fg)', fontWeight: 500 }}>{pilares.cliente}</td>
+                          <td style={{ padding: '12px', textAlign: 'center', color: 'var(--fg)', fontWeight: 500 }}>{pilares.seguranca}</td>
+                          <td style={{ padding: '12px', textAlign: 'center' }}>
+                            <span style={{ fontWeight: 700, color: 'var(--fg)', fontSize: 16 }}>{p.scoreIndividual ?? '—'}</span>
                           </td>
-                          <td className="px-3 py-3 text-center">
+                          <td style={{ padding: '12px', textAlign: 'center' }}>
                             {p.percentualScore != null ? (
-                              <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-bold ${
-                                p.percentualScore >= 1.2 ? 'bg-green-100 text-green-700' :
-                                p.percentualScore >= 1.0 ? 'bg-blue-100 text-blue-700'  :
-                                p.percentualScore >= 0.8 ? 'bg-yellow-100 text-yellow-700' :
-                                p.percentualScore >  0   ? 'bg-orange-100 text-orange-700' :
-                                'bg-red-100 text-red-700'
-                              }`}>
+                              <span style={{
+                                display: 'inline-block', padding: '3px 10px', borderRadius: 20,
+                                fontSize: 12, fontWeight: 700,
+                                ...(p.percentualScore >= 1.2
+                                  ? { background: 'rgba(22,163,74,0.1)',  color: '#16A34A' }
+                                  : p.percentualScore >= 1.0
+                                  ? { background: 'rgba(42,185,176,0.1)', color: 'var(--teal)' }
+                                  : p.percentualScore >= 0.8
+                                  ? { background: 'rgba(234,179,8,0.1)',  color: '#CA8A04' }
+                                  : p.percentualScore > 0
+                                  ? { background: 'rgba(249,115,22,0.1)', color: '#EA580C' }
+                                  : { background: 'rgba(239,68,68,0.1)',  color: '#DC2626' }
+                                ),
+                              }}>
                                 {scoreParaLabel(p.scoreIndividual)}
                               </span>
                             ) : '—'}
                           </td>
-                          <td className="px-4 py-3 text-right text-gray-500 text-xs">
+                          <td style={{ padding: '12px 16px', textAlign: 'right', color: 'var(--muted)', fontSize: 12 }}>
                             {p.valorPool != null ? formatarMoeda(p.valorPool) : '—'}
                           </td>
-                          <td className="px-4 py-3 text-right font-bold text-gray-900">
+                          <td style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 700, color: 'var(--fg)' }}>
                             {p.valorFinal != null ? formatarMoeda(p.valorFinal) : '—'}
                           </td>
                         </tr>
@@ -897,24 +964,32 @@ function TabResultados({ obraId }: { obraId: string }) {
                         {/* Avaliadores expandido */}
                         {aberto && p.avaliadores?.length > 0 && (
                           <tr key={`${p.id}-avaliadores`}>
-                            <td colSpan={10} className="px-0 py-0 border-t border-blue-100">
-                              <div className="bg-blue-50 px-6 pb-3 pt-2">
-                                <p className="text-xs font-semibold text-blue-600 uppercase tracking-wide mb-2">Quem avaliou</p>
-                                <div className="space-y-1">
+                            <td colSpan={10} style={{ padding: 0, borderTop: '1px solid rgba(42,185,176,0.15)' }}>
+                              <div style={{ background: 'rgba(42,185,176,0.05)', padding: '12px 24px' }}>
+                                <p style={{ fontSize: 11, fontWeight: 600, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Quem avaliou</p>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                                   {p.avaliadores.map((av: any, idx: number) => (
-                                    <div key={idx} className="flex items-center gap-3 bg-white rounded-lg px-3 py-2 border border-blue-100">
-                                      <span className="text-sm font-medium text-gray-800 flex-1">{av.nome}</span>
+                                    <div key={idx} style={{
+                                      display: 'flex', alignItems: 'center', gap: 12,
+                                      background: 'white', borderRadius: 8, padding: '8px 12px',
+                                      border: '1px solid rgba(42,185,176,0.12)',
+                                    }}>
+                                      <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--fg)', flex: 1 }}>{av.nome}</span>
                                       {av.tipo === 'diretor' && (
-                                        <span className="text-xs text-purple-600 font-medium">Diretor</span>
+                                        <span style={{ fontSize: 12, color: '#7C3AED', fontWeight: 500 }}>Diretor</span>
                                       )}
                                       {av.status === 'concluida' ? (
-                                        <span className="text-xs text-gray-500">
-                                          média <strong className="text-gray-700">{av.media?.toFixed(2) ?? '—'}</strong>
+                                        <span style={{ fontSize: 12, color: 'var(--muted)' }}>
+                                          média <strong style={{ color: 'var(--fg)' }}>{av.media?.toFixed(2) ?? '—'}</strong>
                                         </span>
                                       ) : (
-                                        <span className="text-xs text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">Pendente</span>
+                                        <span style={{ fontSize: 12, color: '#D97706', background: 'rgba(217,119,6,0.1)', padding: '2px 8px', borderRadius: 20 }}>
+                                          Pendente
+                                        </span>
                                       )}
-                                      <Badge color={av.status === 'concluida' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-400'}>
+                                      <Badge
+                                        bg={av.status === 'concluida' ? 'rgba(22,163,74,0.1)' : 'rgba(107,114,128,0.1)'}
+                                        color={av.status === 'concluida' ? '#16A34A' : 'var(--muted)'}>
                                         {av.status === 'concluida' ? '✓' : '○'}
                                       </Badge>
                                     </div>

@@ -16,47 +16,97 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetch('/api/obras')
-      .then(r => r.json())
-      .then(d => { setObras(d); setLoading(false) })
+    fetch('/api/obras').then(r => r.json()).then(d => { setObras(d); setLoading(false) })
   }, [])
 
   return (
-    <div className="max-w-3xl mx-auto px-4">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-xl font-bold text-gray-900">Obras</h1>
-        <Link href="/obras/nova"
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
+    <div>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 style={{ fontSize: 20, fontWeight: 700, color: 'var(--fg)' }}>Obras</h1>
+          {!loading && obras.length > 0 && (
+            <p style={{ fontSize: 13, color: 'var(--muted)', marginTop: 2 }}>
+              {obras.length} obra{obras.length !== 1 ? 's' : ''} cadastrada{obras.length !== 1 ? 's' : ''}
+            </p>
+          )}
+        </div>
+        <Link href="/obras/nova" className="btn-primary">
           + Nova Obra
         </Link>
       </div>
 
       {loading ? (
-        <p className="text-center text-gray-400 py-10">Carregando...</p>
+        <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--muted)', fontSize: 14 }}>
+          Carregando...
+        </div>
       ) : obras.length === 0 ? (
-        <div className="text-center py-16 text-gray-400">
-          <p className="text-5xl mb-3">🏗️</p>
-          <p className="font-medium">Nenhuma obra cadastrada.</p>
-          <p className="text-sm mt-1">Comece criando a primeira obra.</p>
+        <div className="card" style={{ textAlign: 'center', padding: '64px 24px' }}>
+          <div style={{
+            width: 48, height: 48, borderRadius: 12, margin: '0 auto 16px',
+            background: 'linear-gradient(135deg, var(--teal), var(--blue))',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
+              <rect x="3" y="3" width="18" height="18" rx="2"/>
+              <path d="M3 9h18M9 21V9"/>
+            </svg>
+          </div>
+          <p style={{ fontWeight: 600, color: 'var(--fg)', marginBottom: 4 }}>Nenhuma obra cadastrada</p>
+          <p style={{ fontSize: 13, color: 'var(--muted)' }}>Comece criando a primeira obra.</p>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {obras.map(obra => (
-            <Link key={obra.id} href={`/obras/${obra.id}`}
-              className="flex items-center justify-between bg-white border border-gray-200 rounded-xl p-4 hover:border-blue-300 hover:shadow-sm transition-all">
-              <div>
-                <p className="font-semibold text-gray-900">{obra.nome}</p>
-                <p className="text-sm text-gray-500 mt-0.5">
-                  {formatarMoeda(obra.valorContrato)} · {obra._count.pessoas} pessoa{obra._count.pessoas !== 1 ? 's' : ''}
-                </p>
-              </div>
-              <div className="text-right">
-                <p className="text-xs text-gray-400">
-                  {new Date(obra.createdAt).toLocaleDateString('pt-BR')}
-                </p>
-                <span className="text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full mt-1 inline-block">
-                  {obra._count.avaliacoes} avaliações
-                </span>
+            <Link key={obra.id} href={`/obras/${obra.id}`} style={{ textDecoration: 'none' }}>
+              <div className="card" style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '14px 18px', cursor: 'pointer', transition: 'border-color 0.15s, box-shadow 0.15s',
+              }}
+                onMouseEnter={e => {
+                  const el = e.currentTarget as HTMLDivElement
+                  el.style.borderColor = 'var(--teal)'
+                  el.style.boxShadow = '0 2px 12px rgba(42,185,176,0.12)'
+                }}
+                onMouseLeave={e => {
+                  const el = e.currentTarget as HTMLDivElement
+                  el.style.borderColor = 'var(--border)'
+                  el.style.boxShadow = 'none'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                  <div style={{
+                    width: 40, height: 40, borderRadius: 10, flexShrink: 0,
+                    background: 'linear-gradient(135deg, var(--teal), var(--blue))',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
+                      <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+                      <polyline points="9 22 9 12 15 12 15 22"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <p style={{ fontWeight: 600, fontSize: 14, color: 'var(--fg)', marginBottom: 2 }}>{obra.nome}</p>
+                    <p style={{ fontSize: 12, color: 'var(--muted)' }}>
+                      {formatarMoeda(obra.valorContrato)}
+                      <span style={{ margin: '0 6px', opacity: 0.4 }}>·</span>
+                      {obra._count.pessoas} pessoa{obra._count.pessoas !== 1 ? 's' : ''}
+                    </p>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+                  <span style={{
+                    fontSize: 12, fontWeight: 500, padding: '3px 10px', borderRadius: 20,
+                    background: 'rgba(42,185,176,0.1)', color: 'var(--teal)',
+                  }}>
+                    {obra._count.avaliacoes} avaliações
+                  </span>
+                  <span style={{ fontSize: 12, color: 'var(--muted)' }}>
+                    {new Date(obra.createdAt).toLocaleDateString('pt-BR')}
+                  </span>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="2">
+                    <polyline points="9 18 15 12 9 6"/>
+                  </svg>
+                </div>
               </div>
             </Link>
           ))}

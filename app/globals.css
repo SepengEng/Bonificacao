@@ -1,12 +1,71 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f8fafc;
-  --foreground: #0f172a;
+  --bg: #F2F4F7;
+  --fg: #111827;
+  --teal: #2AB9B0;
+  --blue: #18ABDA;
+  --navy: #1B2C40;
+  --navy-light: #243548;
+  --border: #E2E6EC;
+  --muted: #6B7280;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
+
+.sepeng-gradient {
+  background: linear-gradient(135deg, var(--teal) 0%, var(--blue) 100%);
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--teal) 0%, var(--blue) 100%);
+  color: white;
+  font-weight: 600;
+  border-radius: 8px;
+  padding: 8px 18px;
+  font-size: 14px;
+  transition: opacity 0.15s, box-shadow 0.15s;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.btn-primary:hover { opacity: 0.9; box-shadow: 0 4px 12px rgba(24,171,218,0.3); }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.btn-ghost {
+  color: var(--muted);
+  font-size: 14px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: white;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+.btn-ghost:hover { border-color: var(--teal); color: var(--teal); }
+
+.card {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+input, select {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 14px;
+  outline: none;
+  background: white;
+  color: var(--fg);
+  transition: border-color 0.15s;
+}
+input:focus, select:focus { border-color: var(--teal); box-shadow: 0 0 0 3px rgba(42,185,176,0.12); }
