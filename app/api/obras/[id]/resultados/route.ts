@@ -80,6 +80,19 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     const valorPool  = pessoa.percentual != null ? poolSetor * pessoa.percentual : null
     const valorFinal = valorPool !== null && percentualScore !== null ? valorPool * percentualScore : null
 
+    const avaliadoresList = recebidas.map(a => {
+      const av = obra.pessoas.find(p => p.id === a.avaliadorId)
+      const vals = [a.q1, a.q2, a.q3, a.q4, a.q5, a.q6, a.q7].filter((v): v is number => v !== null)
+      const media = vals.length > 0 ? vals.reduce((s, v) => s + v, 0) / vals.length : null
+      return {
+        nome:  av?.nome  ?? 'Desconhecido',
+        tipo:  av?.tipo  ?? 'colaborador',
+        funcao: av?.funcao ?? null,
+        status: a.status,
+        media,
+      }
+    })
+
     return {
       ...pessoa,
       mediaNpsCultural,
@@ -91,6 +104,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
       avaliacoesConcluidas: concluidas.length,
       avaliacoesPendentes:  recebidas.filter(a => a.status === 'pendente').length,
       avaliacoesTotal:      recebidas.length,
+      avaliadores: avaliadoresList,
     }
   })
 

@@ -616,8 +616,9 @@ function TabAvaliacoes({ obra, onReload }: { obra: Obra; onReload: () => void })
 
 // ─── TAB RESULTADOS ───────────────────────────────────────────────────────────
 function TabResultados({ obraId }: { obraId: string }) {
-  const [data,    setData]    = useState<any>(null)
-  const [loading, setLoading] = useState(true)
+  const [data,      setData]      = useState<any>(null)
+  const [loading,   setLoading]   = useState(true)
+  const [expandido, setExpandido] = useState<string | null>(null)
 
   useEffect(() => {
     fetch(`/api/obras/${obraId}/resultados`)
@@ -697,62 +698,97 @@ function TabResultados({ obraId }: { obraId: string }) {
                     <th className="px-4 py-2.5 text-right text-xs font-semibold text-gray-700">Valor Final</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-50">
-                  {pessoas.map((p: any) => (
-                    <tr key={p.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3">
-                        <p className="font-medium text-gray-800">{p.nome}</p>
-                        {p.funcao && <p className="text-xs text-gray-400">{p.funcao}</p>}
-                        {p.avaliacoesTotal > 0 && (
-                          <p className="text-xs text-gray-400 mt-0.5">
-                            {p.avaliacoesConcluidas}/{p.avaliacoesTotal} avaliações
-                          </p>
+                <tbody>
+                  {pessoas.map((p: any) => {
+                    const aberto = expandido === p.id
+                    return (
+                      <>
+                        <tr key={p.id} className={`border-t border-gray-50 ${aberto ? 'bg-blue-50' : 'hover:bg-gray-50'}`}>
+                          <td className="px-4 py-3">
+                            <p className="font-medium text-gray-800">{p.nome}</p>
+                            {p.funcao && <p className="text-xs text-gray-400">{p.funcao}</p>}
+                            {p.avaliacoesTotal > 0 && (
+                              <button
+                                onClick={() => setExpandido(aberto ? null : p.id)}
+                                className="text-xs text-blue-600 hover:text-blue-800 mt-0.5 underline underline-offset-2"
+                              >
+                                {aberto ? '▲ ocultar' : `▼ ${p.avaliacoesConcluidas}/${p.avaliacoesTotal} avaliadores`}
+                              </button>
+                            )}
+                          </td>
+                          <td className="px-3 py-3 text-center text-gray-700 font-medium">{pilares.prazo}</td>
+                          <td className="px-3 py-3 text-center text-gray-700 font-medium">{pilares.custo}</td>
+                          <td className="px-3 py-3 text-center">
+                            {p.mediaNpsCultural != null ? (
+                              <div>
+                                <span className="font-semibold text-gray-800">{p.npsCulturalPts}</span>
+                                <span className="text-xs text-gray-400 block">média {p.mediaNpsCultural.toFixed(2)}</span>
+                              </div>
+                            ) : (
+                              <span className="text-xs text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full">
+                                {p.avaliacoesTotal === 0 ? 'sem aval.' : `${p.avaliacoesPendentes} pend.`}
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-3 py-3 text-center text-gray-700 font-medium">{pilares.cliente}</td>
+                          <td className="px-3 py-3 text-center text-gray-700 font-medium">{pilares.seguranca}</td>
+                          <td className="px-3 py-3 text-center">
+                            <span className="font-bold text-gray-900 text-base">{p.scoreIndividual ?? '—'}</span>
+                          </td>
+                          <td className="px-3 py-3 text-center">
+                            {p.percentualScore != null ? (
+                              <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-bold ${
+                                p.percentualScore >= 1.2 ? 'bg-green-100 text-green-700' :
+                                p.percentualScore >= 1.0 ? 'bg-blue-100 text-blue-700'  :
+                                p.percentualScore >= 0.8 ? 'bg-yellow-100 text-yellow-700' :
+                                p.percentualScore >  0   ? 'bg-orange-100 text-orange-700' :
+                                'bg-red-100 text-red-700'
+                              }`}>
+                                {scoreParaLabel(p.scoreIndividual)}
+                              </span>
+                            ) : '—'}
+                          </td>
+                          <td className="px-4 py-3 text-right text-gray-500 text-xs">
+                            {p.valorPool != null ? formatarMoeda(p.valorPool) : '—'}
+                          </td>
+                          <td className="px-4 py-3 text-right font-bold text-gray-900">
+                            {p.valorFinal != null ? formatarMoeda(p.valorFinal) : '—'}
+                          </td>
+                        </tr>
+
+                        {/* Avaliadores expandido */}
+                        {aberto && p.avaliadores?.length > 0 && (
+                          <tr key={`${p.id}-avaliadores`}>
+                            <td colSpan={10} className="px-0 py-0 border-t border-blue-100">
+                              <div className="bg-blue-50 px-6 pb-3 pt-2">
+                                <p className="text-xs font-semibold text-blue-600 uppercase tracking-wide mb-2">Quem avaliou</p>
+                                <div className="space-y-1">
+                                  {p.avaliadores.map((av: any, idx: number) => (
+                                    <div key={idx} className="flex items-center gap-3 bg-white rounded-lg px-3 py-2 border border-blue-100">
+                                      <span className="text-sm font-medium text-gray-800 flex-1">{av.nome}</span>
+                                      {av.tipo === 'diretor' && (
+                                        <span className="text-xs text-purple-600 font-medium">Diretor</span>
+                                      )}
+                                      {av.status === 'concluida' ? (
+                                        <span className="text-xs text-gray-500">
+                                          média <strong className="text-gray-700">{av.media?.toFixed(2) ?? '—'}</strong>
+                                        </span>
+                                      ) : (
+                                        <span className="text-xs text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">Pendente</span>
+                                      )}
+                                      <Badge color={av.status === 'concluida' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-400'}>
+                                        {av.status === 'concluida' ? '✓' : '○'}
+                                      </Badge>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            </td>
+                          </tr>
                         )}
-                      </td>
-                      {/* Fixed pillar pts — same for everyone */}
-                      <td className="px-3 py-3 text-center text-gray-700 font-medium">{pilares.prazo}</td>
-                      <td className="px-3 py-3 text-center text-gray-700 font-medium">{pilares.custo}</td>
-                      {/* Individual NPS Cultural */}
-                      <td className="px-3 py-3 text-center">
-                        {p.mediaNpsCultural != null ? (
-                          <div>
-                            <span className="font-semibold text-gray-800">{p.npsCulturalPts}</span>
-                            <span className="text-xs text-gray-400 block">média {p.mediaNpsCultural.toFixed(2)}</span>
-                          </div>
-                        ) : (
-                          <span className="text-xs text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full">
-                            {p.avaliacoesTotal === 0 ? 'sem aval.' : `${p.avaliacoesPendentes} pend.`}
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-3 py-3 text-center text-gray-700 font-medium">{pilares.cliente}</td>
-                      <td className="px-3 py-3 text-center text-gray-700 font-medium">{pilares.seguranca}</td>
-                      {/* Score */}
-                      <td className="px-3 py-3 text-center">
-                        <span className="font-bold text-gray-900 text-base">{p.scoreIndividual ?? '—'}</span>
-                      </td>
-                      {/* % */}
-                      <td className="px-3 py-3 text-center">
-                        {p.percentualScore != null ? (
-                          <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-bold ${
-                            p.percentualScore >= 1.2 ? 'bg-green-100 text-green-700' :
-                            p.percentualScore >= 1.0 ? 'bg-blue-100 text-blue-700'  :
-                            p.percentualScore >= 0.8 ? 'bg-yellow-100 text-yellow-700' :
-                            p.percentualScore >  0   ? 'bg-orange-100 text-orange-700' :
-                            'bg-red-100 text-red-700'
-                          }`}>
-                            {scoreParaLabel(p.scoreIndividual)}
-                          </span>
-                        ) : '—'}
-                      </td>
-                      <td className="px-4 py-3 text-right text-gray-500 text-xs">
-                        {p.valorPool != null ? formatarMoeda(p.valorPool) : '—'}
-                      </td>
-                      <td className="px-4 py-3 text-right font-bold text-gray-900">
-                        {p.valorFinal != null ? formatarMoeda(p.valorFinal) : '—'}
-                      </td>
-                    </tr>
-                  ))}
+                      </>
+                    )
+                  })}
                 </tbody>
               </table>
             </div>
